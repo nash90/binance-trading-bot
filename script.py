@@ -16,6 +16,7 @@ stop_loss = 10
 profit_rate = config["profit_rate"]
 stop_profit_rate = config["stop_profit_rate"]
 stop_profit = 0
+run_count = 0
 
 
 def getMyAsset(assetName="BTC"):
@@ -82,13 +83,24 @@ def getMyPortfolio(check_list=crypto_list):
     return assets
 
 def setStopLoss(exchange, quantity, sell_price):
+    params = {
+        "symbol":exchange,
+        "side":SIDE_SELL,
+        "type":ORDER_TYPE_STOP_LOSS_LIMIT,
+        "timeInForce":TIME_IN_FORCE_GTC,
+        "quantity":quantity,
+        "price":sell_price
+    }
+    print(params)
+
     order = client.create_order(
-        symbol=exchange,
-        side=SIDE_SELL,
-        type=ORDER_TYPE_STOP_LOSS,
+        symbol=params.get("symbol"),
+        side=params.get("side"),
+        type=params.get("type"),
         timeInForce=TIME_IN_FORCE_GTC,
-        quantity=quantity,
-        price=sell_price)
+        quantity=params.get("quantity"),
+        price=params.get("price"),
+        stopPrice=params.get("price"))
     print("LOG: Stop Loss was Set",order)
     return order
 
@@ -150,10 +162,10 @@ def buyAssets():
         saveTransaction(db_log)
 
 
-total_root_asset = float(getMyAsset()["free"])
+begin_asset = float(getMyAsset(config.get("root_asset"))["free"])
 my_portfolio = getMyPortfolio(crypto_list)
 
-total_root_asset = 100 # test purpose
+total_root_asset = config.get("principle_amount") # test purpose
 buy_size = total_root_asset / len(crypto_list)
 buy_size = round(buy_size, 4)
 
@@ -189,68 +201,84 @@ def getOrderStatus(res):
 
 def start2():
     #print("LOG: New Cycle)
-    for asset in crypto_list:
-        asset_status = ''
-        exchange = asset["exchange"]
-        root_asset_min_limit = float(asset["min_limit"])
-        orders = getOrders(exchange)
-        order = orders[0]
-        openOrders = getOpenOrders(exchange)
-        asset_status = getOrderStatus(order)
-        target_asset = getMyAsset(asset["asset"])
-        
-        target_asset_num = round(float(target_asset.get("free")),6) 
+    global run_count
+    asset = crypto_list[0]
+    asset_status = ''
+    exchange = asset["exchange"]
+    root_asset_min_limit = float(asset["min_limit"])
+    orders = getOrders(exchange)
+    order = orders[0]
+    openOrders = getOpenOrders(exchange)
+    asset_status = getOrderStatus(order)
+    target_asset = getMyAsset(asset["asset"])
+    
+    target_asset_num = round(float(target_asset.get("free")),6) 
+    current_price = getCurrentAssetRate(exchange)
+
+    if openOrders == [] and (asset_status == "BUY_FILLED" or asset_status == "SELL_CANCELED") and target_asset_num > root_asset_min_limit:
+        print("LOG: Target Asset Already Bought")
+        quantity = target_asset_num
+        bought_price = order["price"]
+        prices = getPrices(exchange, bought_price, current_price)
+        print("LOG: Prices", prices)
+        if current_price < prices["stop_loss"]:
+            print("LOG: Target Asset already exists and Risk Stop loss Exceeded; Run Sell")
+            order = sellAsset(exchange, quantity, current_price)
+        elif current_price > prices["limit_profit"]:
+            print("LOG: Current price exceeds Profit limit; Run Profit stop loss")
+            stop_limit_profit = current_price - (current_price * stop_profit_rate)
+            order = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
+    elif openOrders == []:
+        print("LOG: Create New Fresh Order for Target")
+        run_count = run_count+ 1
         current_price = getCurrentAssetRate(exchange)
-
-        if openOrders == [] and (asset_status == "BUY_FILLED" or asset_status == "SELL_CANCELED") and target_asset_num > root_asset_min_limit:
-            print("LOG: Target Asset Already Bought")
-            quantity = target_asset
-            bought_price = order["price"]
-            prices = getPrices(exchange, bought_price, current_price)
-            print("LOG: Prices", prices)
-            if current_price < prices["stop_loss"]:
-                print("LOG: Target Asset already exists and Risk Stop loss Exceeded; Run Sell")
-                order = sellAsset(exchange, quantity, current_price)
-            elif current_price > prices["limit_profit"]:
-                print("LOG: Current price exceeds Profit limit; Run Profit stop loss")
-                stop_limit_profit = current_price - (current_price * stop_profit_rate)
-                order = setStopLoss(exchange, quantity, stop_limit_profit)
-        elif openOrders == []:
-            print("LOG: Create New Fresh Order for Target")
-            current_price = getCurrentAssetRate(exchange)
-            ammount = buy_size / current_price
-            ammount = round(ammount, 6)
-            order = buyAsset(exchange, ammount, current_price)
+        ammount = buy_size / current_price
+        ammount = round(ammount, 6)
+        order = buyAsset(exchange, ammount, current_price)
 
 
-        elif openOrders != [] and asset_status == "SELL_NEW":
-            print("LOG: Open Sell Order Found")
-            quantity = target_asset
-            bought_price = order["price"]
-            prices = getPrices(exchange, bought_price, current_price)
+    elif openOrders != [] and asset_status == "SELL_NEW":
+        print("LOG: Open Sell Order Found", openOrders)
+        quantity = target_asset_num
+        bought_price = order["price"]
+        prices = getPrices(exchange, bought_price, current_price)
 
-            if current_price < prices["stop_loss"]:
-                print("LOG: Open Sell order found and exceeds Risk Stop Loss; retry sell again")
+        if current_price < prices["stop_loss"]:
+            print("LOG: Open Sell order found and exceeds Risk Stop Loss; retry sell again")
+            order =cancelOrder(exchange, order["orderId"])
+            order = sellAsset(exchange, quantity, current_price)
+    
+        elif order["type"] == "STOP_LOSS" and current_price > prices["limit_profit"]:
+            print("LOG: Open STOP_LOSS order; Current Price is over Default Profit limit")
+            stop_limit_profit = current_price - (current_price * stop_profit_rate)
+            if order["price"] < stop_limit_profit:
+                print("LOG: Open STOP_LOSS order; Found Potential to extend Profit Stop Limit")
+                print("LOG: Cancel previos Sell Order")
                 order =cancelOrder(exchange, order["orderId"])
-                order = sellAsset(exchange, quantity, current_price)
-      
-            elif order["type"] == "STOP_LOSS" and current_price > prices["limit_profit"]:
-                print("LOG: Open STOP_LOSS order; Current Price is over Default Profit limit")
-                stop_limit_profit = current_price - (current_price * stop_profit_rate)
-                if order["price"] < stop_limit_profit:
-                    print("LOG: Open STOP_LOSS order; Found Potential to extend Profit Stop Limit")
-                    print("LOG: Cancel previos Sell Order")
-                    order =cancelOrder(exchange, order["orderId"])
-                    print("LOG: Create New Sell Order Profit Stop Limit ")
-                    order = setStopLoss(exchange, quantity, stop_limit_profit)
-            
-        elif openOrders != [] and asset_status == "BUY_NEW":
-            print("LOG: BUY_NEW; Open Buy Order Found", openOrders)
+                print("LOG: Create New Sell Order Profit Stop Limit ")
+                order = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
+        
+    elif openOrders != [] and asset_status == "BUY_NEW":
+        print("LOG: BUY_NEW; Open Buy Order Found", openOrders)
 
 
 def runBatch():
-    while True:
+    global begin_asset
+    run = True
+    while run:
+        current_asset = getMyAsset(config.get("root_asset"))
+        #begin_asset = config.get("day_start_amount")
+        
+        daily_loss_limit = begin_asset - (begin_asset* config["day_stop"]["loss"])
+        if float(current_asset["free"]) < daily_loss_limit:
+            run = False
+            print("LOG: Shut down bot coz of daily loss limit triggered")
+
+        if run_count > config.get("stop_script"):
+            run = False
+            print("LOG: Shut down bot coz batch trade loop count limit triggered")
         start2()
         time.sleep(5)
 
 
+runBatch()
