@@ -244,19 +244,19 @@ def start2():
         prices = getPrices(exchange, bought_price, current_price)
 
         if current_price < prices["stop_loss"]:
-            print("LOG: Open Sell order found and exceeds Risk Stop Loss; retry sell again")
+            print("LOG: Open Sell order found and exceeds Risk Stop Loss; retry sell again", prices)
             order =cancelOrder(exchange, order["orderId"])
-            order = sellAsset(exchange, quantity, current_price)
+            #order = sellAsset(exchange, quantity, current_price)
     
         elif order["type"] == "STOP_LOSS_LIMIT" and current_price > prices["limit_profit"]:
-            print("LOG: Open STOP_LOSS_LIMIT order; Current Price is over Default Profit limit")
+            print("LOG: Open STOP_LOSS_LIMIT order; Current Price is over Default Profit limit", prices)
             stop_limit_profit = current_price - (current_price * stop_profit_rate)
-            if order["price"] < stop_limit_profit:
+            if float(order["price"]) < stop_limit_profit:
                 print("LOG: Open STOP_LOSS_LIMIT order; Found Potential to extend Profit Stop Limit")
                 print("LOG: Cancel previos Sell Order")
                 order =cancelOrder(exchange, order["orderId"])
-                print("LOG: Create New Sell Order Profit Stop Limit ")
-                order = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
+                #print("LOG: Create New Sell Order Profit Stop Limit ")
+                #order = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
         
     elif openOrders != [] and asset_status == "BUY_NEW":
         print("LOG: BUY_NEW; Open Buy Order Found", current_price, openOrders)
