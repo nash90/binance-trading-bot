@@ -216,7 +216,7 @@ def start2():
     current_price = getCurrentAssetRate(exchange)
 
     if openOrders == [] and (asset_status == "BUY_FILLED" or asset_status == "SELL_CANCELED") and target_asset_num > root_asset_min_limit:
-        print("LOG: Target Asset Already Bought")
+        print("LOG: Target Asset Already Bought: ", current_price)
         quantity = target_asset_num
         bought_price = order["price"]
         prices = getPrices(exchange, bought_price, current_price)
@@ -229,7 +229,7 @@ def start2():
             stop_limit_profit = current_price - (current_price * stop_profit_rate)
             order = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
     elif openOrders == []:
-        print("LOG: Create New Fresh Order for Target")
+        print("LOG: Create New Fresh Order for Target: ", current_price)
         run_count = run_count+ 1
         current_price = getCurrentAssetRate(exchange)
         ammount = buy_size / current_price
@@ -238,7 +238,7 @@ def start2():
 
 
     elif openOrders != [] and asset_status == "SELL_NEW":
-        print("LOG: Open Sell Order Found", openOrders)
+        print("LOG: Open Sell Order Found ", current_price, openOrders)
         quantity = target_asset_num
         bought_price = order["price"]
         prices = getPrices(exchange, bought_price, current_price)
@@ -259,7 +259,7 @@ def start2():
                 order = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
         
     elif openOrders != [] and asset_status == "BUY_NEW":
-        print("LOG: BUY_NEW; Open Buy Order Found", openOrders)
+        print("LOG: BUY_NEW; Open Buy Order Found", current_price, openOrders)
 
 
 def runBatch():
