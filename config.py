@@ -20,5 +20,6 @@ config = {
 },
 "principle_amount":100,
 "day_start_amount":10000,
-"root_asset": "USDT"
+"root_asset": "USDT",
+"reset_db":True
 }

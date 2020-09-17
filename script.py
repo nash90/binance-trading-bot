@@ -328,7 +328,9 @@ def start():
 def runBatch():
     global begin_asset
     run = True
-    
+    if config.get("reset_db") == True:
+        session.query(Order).filter(Order.sold_flag==False).update({Order.sold_flag:True})
+
     while run:
         #current_asset = getMyAsset(config.get("root_asset"))
         #begin_asset = config.get("day_start_amount")
@@ -348,4 +350,4 @@ def runBatch():
 
     session.close()
     
-runBatch()
+#runBatch()
