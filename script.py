@@ -211,7 +211,7 @@ buy_size = total_root_asset / len(crypto_list)
 buy_size = round(buy_size, 4)
 
 
-def executeStopLoss(exchange, quantity, order):
+def executeStopLoss(exchange, quantity, order, prices):
     sold = marketSell(exchange, quantity)
     order.market_sell_txn_id = sold.get("orderId")
     order.sold_flag = True
@@ -284,7 +284,7 @@ def start():
             
             if current_price < price_order_stop_loss:
                 print("LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
-                executeStopLoss(exchange, quantity, order)
+                executeStopLoss(exchange, quantity, order, prices)
 
             elif current_price > price_profit_margin:
                 print("LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
@@ -318,7 +318,7 @@ def start():
                 #cancel_order =cancelOrder(exchange, order_id)
                 #time.sleep(5)
                 print("LOG: Time to cash out .........")
-                executeStopLoss(exchange, quantity, order)
+                executeStopLoss(exchange, quantity, order, prices)
 
 
     ###################
