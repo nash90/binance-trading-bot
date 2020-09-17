@@ -6,11 +6,6 @@ import json
 import os
 import time
 
-from base import Base
-from base import engine
-from base import Session
-from models import Order
-
 api_key = config["api_key"]
 api_secret = config["api_secret"]
 client = Client(api_key, api_secret)
@@ -23,8 +18,6 @@ stop_profit_rate = config["stop_profit_rate"]
 stop_profit = 0
 run_count = 0
 
-session = Session()
-# APP constants
 
 def getMyAsset(assetName="BTC"):
     asset = client.get_asset_balance(asset=assetName)
@@ -59,23 +52,6 @@ def buyAsset(exchange, quantity, price):
     print("LOG: Bought Asset",order)
     return order
 
-def marketBuy(exchange, quantity):
-
-    params = {
-        "symbol": exchange,
-        "quantity": quantity
-    }
-
-    print(param)
-    order = client.order_market_buy(
-        symbol=params.get("symbol"),
-        quantity=params.get("quantity")
-    )
-    print("LOG: Market Buy Asset",order)
-
-    return order    
-
-
 def sellAsset(exchange, quantity, price):
     order = client.create_order(
         symbol=exchange,
@@ -86,24 +62,6 @@ def sellAsset(exchange, quantity, price):
         price=price)
     print("LOG: SOLD Asset", order)
     return order
-
-def marketSell(exchange, quantity):
-
-    params = {
-        "symbol": exchange,
-        "quantity": quantity
-    }
-
-    print(param)
-    order = client.order_market_sell(
-        symbol=params.get("symbol"),
-        quantity=params.get("quantity")
-    )
-    print("LOG: Market Sell Asset",order)
-
-    return order    
-
-
 
 def getOrders(symbol,limit=1):
     order = client.get_all_orders(symbol=symbol, limit=limit)
@@ -155,11 +113,9 @@ def getPrices(exchange, buy_price, current_price):
     buy_price = float(buy_price)
     stop_loss = buy_price - (buy_price *  stop_loss_rate)
     limit_profit =  buy_price + (buy_price * profit_rate)
-    stop_limit_profit = "N/A"
-    
-    if current_price > limit_profit:
-        stop_limit_profit = current_price - (current_price * stop_profit_rate)
-
+    stop_limit_profit = buy_price - (buy_price * stop_profit_rate)
+    if current_price < limit_profit:
+        stop_limit_profit = "N/A"
     prices = {
         "current_price": current_price,
         "buy_price": buy_price,
@@ -184,18 +140,6 @@ def saveTransaction(db_log):
 
 def getTransaction():
     pass
-
-def addDataToDB(obj):
-  session.add(obj)
-  sessionCommit()
-
-def sessionCommit():
-    try:  
-        session.commit()
-    except Exception as e:
-        session.rollback()
-    #print(e)
-    raise e
 
 def buyAssets():
     global stop_loss_sell
@@ -259,96 +203,63 @@ def start2():
     #print("LOG: New Cycle)
     global run_count
     asset = crypto_list[0]
-    asset_status = '' ## necessary?
+    asset_status = ''
     exchange = asset["exchange"]
     root_asset_min_limit = float(asset["min_limit"])
-
-    ## get order of unsold asset from DB
-    orders = session.query(Order).filter(Order.bought_flag == True).filter(Order.sold_flag == False).all()
+    orders = getOrders(exchange)
+    order = orders[0]
+    openOrders = getOpenOrders(exchange)
+    asset_status = getOrderStatus(order)
+    target_asset = getMyAsset(asset["asset"])
     
-    order = None
-    if len(orders) > 0
-        order = orders[0]
-    
-    target_asset = getMyAsset(asset["asset"]) ## improve place?
-    target_asset_num = round(float(target_asset.get("free")),6) ## might not need here?
+    target_asset_num = round(float(target_asset.get("free")),6) 
     current_price = getCurrentAssetRate(exchange)
 
-    ###################
-    ###################
-    ###################
-
-    if order == None:
+    if openOrders == [] and (asset_status == "BUY_FILLED" or asset_status == "SELL_CANCELED") and target_asset_num > root_asset_min_limit:
+        print("LOG: Target Asset Already Bought: ", current_price)
+        quantity = target_asset_num
+        bought_price = order["price"]
+        prices = getPrices(exchange, bought_price, current_price)
+        print("LOG: Prices", prices)
+        if current_price < prices["stop_loss"]:
+            print("LOG: Target Asset already exists and Risk Stop loss Exceeded; Run Sell")
+            order = sellAsset(exchange, quantity, current_price)
+        elif current_price > prices["limit_profit"]:
+            print("LOG: Current price exceeds Profit limit; Run Profit stop loss")
+            stop_limit_profit = current_price - (current_price * stop_profit_rate)
+            order = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
+    elif openOrders == []:
         print("LOG: Create New Fresh Order for Target: ", current_price)
         run_count = run_count+ 1
+        current_price = getCurrentAssetRate(exchange)
         ammount = buy_size / current_price
         ammount = round(ammount, 6)
-        order = marketBuy(exchange, ammount)   
+        order = buyAsset(exchange, ammount, current_price)
 
-        db_order = Order(
-            symbol = order.get("symbol"),
-            order_id = order.get("order_id"),
-            client_order_id = order.get("client_order_id"),
-            side = order.get("side"),
-            type=order.get("type"),
-            price= round(float(order.get("price")), 2),
-            orig_quantity=round(float(order.get("origQty")),6),
-            orig_quantity=round(float(order.get("executedQty")),6),
-            server_side_status= order.get("status")
-        )
 
-        addDataToDB(db_order)
-
-    else:
-        bought_price = order.price
-        quantity = order.executed_quantity
+    elif openOrders != [] and asset_status == "SELL_NEW":
+        print("LOG: Open Sell Order Found ", current_price, openOrders)
+        quantity = target_asset_num
+        bought_price = order["price"]
         prices = getPrices(exchange, bought_price, current_price)
-        order_id = order.order_id
 
-        if order.profit_sale_process_flag == False:
-            
-            if current_price < prices.get("stop_loss"):
-                
-                sold = marketSell(exchange, quantity)
-                order.market_sell_txn_id = sold.get("orderId")
-                order.sold_flag = true
-                sessionCommit()
-
-            elif current_price > prices.get("limit_profit"):
-                stop_limit_profit = current_price - (current_price * stop_profit_rate)
-                profit_sell_stop_limit = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
-                order.profit_sale_txn_id = profit_sell_stop_limit.get("orderId")
-                order.profit_sale_stop_loss_price = profit_sell_stop_limit.get("price")
-                order.profit_sale_process_flag = true
-                sessionCommit()
-
-            else:
-                print("LOG: Observing Market for Selling Opprtunity", prices) 
-
-        else:
-            old_profit_sale_stop_loss_price = order.profit_sale_stop_loss_price
-
-            new_profit_sale_stop_loss_price = current_price - (current_price * stop_profit_rate)
-
-            if old_profit_sale_stop_loss_price < new_profit_sale_stop_loss_price:
-                cancel_order =cancelOrder(exchange, order_id)
-                order.profit_sale_process_flag = false
-                order.profit_sale_txn_id = ""
-                order.profit_sale_stop_loss_price = ""
-                sessionCommit()
-
-            elif current_price < prices.get("stop_limit_profit"):
-                cancel_order =cancelOrder(exchange, order_id)
-                time.sleep(5)
-                sold = marketSell(exchange, quantity)
-                order.market_sell_txn_id = sold.get("orderId")
-                order.sold_flag = true
-                sessionCommit()
-
-
-    ###################
-    ###################
-    ###################
+        if current_price < prices["stop_loss"]:
+            print("LOG: Open Sell order found and exceeds Risk Stop Loss; retry sell again", prices)
+            order =cancelOrder(exchange, order["orderId"])
+            #order = sellAsset(exchange, quantity, current_price)
+    
+        elif order["type"] == "STOP_LOSS_LIMIT" and current_price > prices["limit_profit"]:
+            print("LOG: Open STOP_LOSS_LIMIT order; Current Price is over Default Profit limit", prices)
+            stop_limit_profit = current_price - (current_price * stop_profit_rate)
+            if float(order["price"]) < stop_limit_profit:
+                print("LOG: Open STOP_LOSS_LIMIT order; Found Potential to extend Profit Stop Limit")
+                print("LOG: Cancel previos Sell Order")
+                order =cancelOrder(exchange, order["orderId"])
+                #print("LOG: Create New Sell Order Profit Stop Limit ")
+                #order = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
+        
+    elif openOrders != [] and asset_status == "BUY_NEW":
+        print("LOG: BUY_NEW; Open Buy Order Found", current_price, openOrders)
 
 
 def runBatch():
@@ -371,6 +282,5 @@ def runBatch():
         start2()
         time.sleep(5)
 
-    session.close()
-    
-runBatch()
+
+#runBatch()

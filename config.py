@@ -1,7 +1,10 @@
 import os
 
 config = {
-"db":"",
+"db":{
+    "type":"sqlite",
+    "file":"data.db"
+},
 "api_key":os.environ["BI_KEY"],
 "api_secret":os.environ["BI_SEC"],
 "crypto_list":[
