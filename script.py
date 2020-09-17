@@ -212,13 +212,14 @@ buy_size = round(buy_size, 4)
 
 
 def executeStopLoss(exchange, quantity, order, prices):
+    global run_count
     sold = marketSell(exchange, quantity)
     order.market_sell_txn_id = sold.get("orderId")
     order.sold_flag = True
     order.all_prices = json.dumps(prices)
     sessionCommit()
     run_count = run_count+ 1
-    time.sleep(60)    
+    time.sleep(300)    
 
 
 def start():

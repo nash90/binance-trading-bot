@@ -2,7 +2,7 @@ import os
 
 config = {
 "reset_db":False,
-"start_bot":True,    
+"start_bot":False,    
 "db":{
     "type":"sqlite",
     "file":"data.db"
