@@ -211,6 +211,16 @@ buy_size = total_root_asset / len(crypto_list)
 buy_size = round(buy_size, 4)
 
 
+def executeStopLoss(exchange, quantity, order):
+    sold = marketSell(exchange, quantity)
+    order.market_sell_txn_id = sold.get("orderId")
+    order.sold_flag = True
+    order.all_prices = json.dumps(prices)
+    sessionCommit()
+    run_count = run_count+ 1
+    time.sleep(60)    
+
+
 def start():
     #print("LOG: New Cycle)
     global run_count
@@ -232,7 +242,6 @@ def start():
 
     if order == None:
         print("LOG: Create New Fresh Order for Target: ", current_price)
-        run_count = run_count+ 1
         ammount = buy_size / current_price
         ammount = round(ammount, 6)
         new_order = marketBuy(exchange, ammount)   
@@ -275,11 +284,7 @@ def start():
             
             if current_price < price_order_stop_loss:
                 print("LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
-                sold = marketSell(exchange, quantity)
-                order.market_sell_txn_id = sold.get("orderId")
-                order.sold_flag = True
-                order.all_prices = json.dumps(prices)
-                sessionCommit()
+                executeStopLoss(exchange, quantity, order)
 
             elif current_price > price_profit_margin:
                 print("LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
@@ -313,11 +318,7 @@ def start():
                 #cancel_order =cancelOrder(exchange, order_id)
                 #time.sleep(5)
                 print("LOG: Time to cash out .........")
-                sold = marketSell(exchange, quantity)
-                order.market_sell_txn_id = sold.get("orderId")
-                order.sold_flag = True
-                order.all_prices = json.dumps(prices)
-                sessionCommit()
+                executeStopLoss(exchange, quantity, order)
 
 
     ###################
@@ -349,5 +350,6 @@ def runBatch():
         time.sleep(5)
 
     session.close()
-    
-#runBatch()
+
+if config.get("start_bot"):    
+    runBatch()
