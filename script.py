@@ -31,6 +31,7 @@ def getMyAsset(assetName="BTC"):
     print("getMyAsset: " + assetName +" : "+ json.dumps(asset))
     return asset
 
+
 def getCurrentAssetRate(asset):
     rate = 0
     all_tickers = client.get_all_tickers()
@@ -38,6 +39,7 @@ def getCurrentAssetRate(asset):
         if item["symbol"] == asset:
             rate = item["price"]
     return float(rate)
+
 
 def buyAsset(exchange, quantity, price):
     params = {
@@ -58,6 +60,7 @@ def buyAsset(exchange, quantity, price):
         price=params.get("price"))
     print("LOG: Bought Asset",order)
     return order
+
 
 def marketBuy(exchange, quantity):
 
@@ -104,16 +107,17 @@ def marketSell(exchange, quantity):
     return order    
 
 
-
 def getOrders(symbol,limit=1):
     order = client.get_all_orders(symbol=symbol, limit=limit)
     print("LOG: Fetched ALL Order")
     return order
 
+
 def getOpenOrders(exchange):
     order = client.get_open_orders(symbol=exchange)
     print("LOG: Fetched All Open Order")
     return order
+
 
 def getMyPortfolio(check_list=crypto_list):
     my_assets = client.get_account()
@@ -123,6 +127,7 @@ def getMyPortfolio(check_list=crypto_list):
             assets.append(asset)
     print("LOG: GOT MY Portfolio")
     return assets
+
 
 def setStopLoss(exchange, quantity, sell_price):
     params = {
@@ -145,6 +150,7 @@ def setStopLoss(exchange, quantity, sell_price):
         stopPrice=params.get("price"))
     print("LOG: Stop Loss was Set",order)
     return order
+
 
 def getPrices(exchange, buy_price, current_price):
     if current_price == None:
@@ -169,6 +175,7 @@ def getPrices(exchange, buy_price, current_price):
     }
     return prices
 
+
 def cancelOrder(exchange, orderId):
     order = client.cancel_order(
     symbol=exchange,
@@ -176,18 +183,11 @@ def cancelOrder(exchange, orderId):
     print("LOG: Order was Canceled ", orderId)
     return order
 
-def setProfitSale():
-    pass
-
-def saveTransaction(db_log):
-    pass
-
-def getTransaction():
-    pass
 
 def addDataToDB(obj):
   session.add(obj)
   sessionCommit()
+
 
 def sessionCommit():
     try:  
@@ -197,26 +197,6 @@ def sessionCommit():
     #print(e)
     raise e
 
-def buyAssets():
-    global stop_loss_sell
-    for asset in crypto_list:
-        current_rate = getCurrentAssetRate(asset)
-        buy_rate = float(current_rate)
-        stop_loss = buy_rate - (buy_rate *  stop_loss_rate)
-        stop_profit =  buy_rate + (buy_rate * profit_rate)
-        buy_txn = buyAsset(round(asset,3), buy_rate)
-
-        stop_loss_txn = setStopLoss(asset)
-        db_log = {
-            "buy_txn":buy_txn,
-            "stop_loss_txn":stop_loss_txn,
-            "buy_rate":buy_rate,
-            "stop_loss":stop_loss,
-            "stop_profit":stop_profit,
-            "stop_profit_rate":stop_profit_rate
-            }
-        saveTransaction(db_log)
-
 
 begin_asset = float(getMyAsset(config.get("root_asset"))["free"])
 my_portfolio = getMyPortfolio(crypto_list)
@@ -225,37 +205,8 @@ total_root_asset = config.get("principle_amount") # test purpose
 buy_size = total_root_asset / len(crypto_list)
 buy_size = round(buy_size, 4)
 
-def startBot():
-    my_portfolio = getMyPortfolio()
-    if my_portfolio > 1 == False:
-        buyAssets()
 
-    if my_portfolio > 1 == True:
-        for asset in my_portfolio:
-            transaction = getTransaction()
-            current_rate = getCurrentAssetRate(asset)
-            if current_rate > transaction["stop_profit"]:
-                setProfitSale(asset)
-
-def getOrderStatus(res):
-    asset_status = ""
-    if res["side"] == 'BUY' and res["status"] == "FILLED":
-        asset_status = "BUY_FILLED"
-    elif res["side"] == 'BUY' and res["status"] == "CANCELED":
-        asset_status = "BUY_CANCELED"
-    elif res["side"] == 'BUY' and res["status"] == "NEW":
-        asset_status = "BUY_NEW"
-    elif res["side"] == "SELL" and res["status"] == "FILLED":
-        asset_status = "SELL_FILLED"
-    elif res["side"] == "SELL" and res["status"] == "CANCELED":
-        asset_status = "SELL_CANCELED"
-    elif res["side"] == "SELL" and res["status"] == "NEW":
-        asset_status = "SELL_NEW"
-    else:
-        asset_status = "OTHERS"
-    return asset_status
-
-def start2():
+def start():
     #print("LOG: New Cycle)
     global run_count
     asset = crypto_list[0]
@@ -368,7 +319,7 @@ def runBatch():
             run = False
             print("LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
             break
-        start2()
+        start()
         time.sleep(5)
 
     session.close()
