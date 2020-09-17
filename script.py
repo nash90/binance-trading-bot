@@ -101,7 +101,7 @@ def marketSell(exchange, quantity):
         "quantity": quantity
     }
 
-    print(param)
+    print(params)
     order = client.order_market_sell(
         symbol=params.get("symbol"),
         quantity=params.get("quantity")
@@ -165,7 +165,7 @@ def getPrices(exchange, buy_price, current_price):
     buy_price = float(buy_price)
     stop_loss = buy_price - (buy_price *  stop_loss_rate)
     limit_profit =  buy_price + (buy_price * profit_rate)
-    stop_limit_profit = "N/A"
+    stop_limit_profit = None
     
     if current_price > limit_profit:
         stop_limit_profit = current_price - (current_price * stop_profit_rate)
@@ -261,10 +261,11 @@ def start():
     else:
         print("LOG: An Asset to Sell is Found", current_price, order.id)
         bought_price = order.price
-        quantity = order.executed_quantity
+        quantity = round(order.executed_quantity,6)
         order_id = order.order_id
 
         prices = getPrices(exchange, bought_price, current_price)
+
         price_order_stop_loss = prices.get("stop_loss")
         price_profit_margin = prices.get("limit_profit")
         price_profit_stop_loss = prices.get("stop_limit_profit")
@@ -277,6 +278,7 @@ def start():
                 sold = marketSell(exchange, quantity)
                 order.market_sell_txn_id = sold.get("orderId")
                 order.sold_flag = True
+                order.all_prices = json.dumps(prices)
                 sessionCommit()
 
             elif current_price > price_profit_margin:
@@ -306,14 +308,15 @@ def start():
                 order.profit_sale_stop_loss_price = new_profit_sale_stop_loss_price
                 sessionCommit()
 
-            elif current_price < price_profit_stop_loss:
-                print("LOG: Current price dropped below price_profit_stop_loss;  ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
+            elif current_price < old_profit_sale_stop_loss_price:
+                print("LOG: Current price dropped below present price_profit_stop_loss;  ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
                 #cancel_order =cancelOrder(exchange, order_id)
                 #time.sleep(5)
                 print("LOG: Time to cash out .........")
                 sold = marketSell(exchange, quantity)
                 order.market_sell_txn_id = sold.get("orderId")
-                order.sold_flag = true
+                order.sold_flag = True
+                order.all_prices = json.dumps(prices)
                 sessionCommit()
 
 
