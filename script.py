@@ -26,6 +26,10 @@ run_count = 0
 session = Session()
 # APP constants
 
+def createTableIfNotExit():
+    return Base.metadata.create_all(engine)
+createTableIfNotExit()
+
 def getMyAsset(assetName="BTC"):
     asset = client.get_asset_balance(asset=assetName)
     print("getMyAsset: " + assetName +" : "+ json.dumps(asset))
@@ -69,7 +73,7 @@ def marketBuy(exchange, quantity):
         "quantity": quantity
     }
 
-    print(param)
+    print(params)
     order = client.order_market_buy(
         symbol=params.get("symbol"),
         quantity=params.get("quantity")
@@ -165,6 +169,7 @@ def getPrices(exchange, buy_price, current_price):
     
     if current_price > limit_profit:
         stop_limit_profit = current_price - (current_price * stop_profit_rate)
+        stop_limit_profit = float(stop_limit_profit)
 
     prices = {
         "current_price": current_price,
@@ -193,9 +198,9 @@ def sessionCommit():
     try:  
         session.commit()
     except Exception as e:
+        #print(e)
         session.rollback()
-    #print(e)
-    raise e
+        raise e
 
 
 begin_asset = float(getMyAsset(config.get("root_asset"))["free"])
@@ -216,7 +221,7 @@ def start():
     orders = session.query(Order).filter(Order.bought_flag == True).filter(Order.sold_flag == False).all()
     
     order = None
-    if len(orders) > 0
+    if len(orders) > 0:
         order = orders[0]
     
     current_price = getCurrentAssetRate(exchange)
@@ -231,6 +236,11 @@ def start():
         ammount = buy_size / current_price
         ammount = round(ammount, 6)
         new_order = marketBuy(exchange, ammount)   
+        price_mb = round(float(new_order.get("price")), 2)
+        fills = new_order.get("fills")
+        if len(fills) > 0:
+            price_mb = float(fills[0]["price"])
+            price_mb = round(price_mb, 2)
 
         db_order = Order(
             symbol = new_order.get("symbol"),
@@ -238,16 +248,18 @@ def start():
             client_order_id = new_order.get("client_order_id"),
             side = new_order.get("side"),
             type=new_order.get("type"),
-            price= round(float(new_order.get("price")), 2),
+            price= price_mb,
             orig_quantity=round(float(new_order.get("origQty")),6),
             executed_quantity=round(float(new_order.get("executedQty")),6),
-            server_side_status= new_order.get("status")
+            server_side_status= new_order.get("status"),
+            bought_flag=True,
+            fills = json.dumps(fills)
         )
 
         addDataToDB(db_order)
 
     else:
-        print("LOG: An Asset to Sell is Found", current_price, order.__dict__)
+        print("LOG: An Asset to Sell is Found", current_price, order.id)
         bought_price = order.price
         quantity = order.executed_quantity
         order_id = order.order_id
@@ -264,7 +276,7 @@ def start():
                 print("LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
                 sold = marketSell(exchange, quantity)
                 order.market_sell_txn_id = sold.get("orderId")
-                order.sold_flag = true
+                order.sold_flag = True
                 sessionCommit()
 
             elif current_price > price_profit_margin:
@@ -274,7 +286,7 @@ def start():
                 #order.profit_sale_txn_id = profit_sell_stop_limit.get("orderId")
                 #order.profit_sale_stop_loss_price = profit_sell_stop_limit.get("price")
                 order.profit_sale_stop_loss_price = stop_limit_profit ## bot handles stop loss instead of server
-                order.profit_sale_process_flag = true
+                order.profit_sale_process_flag = True
                 sessionCommit()
 
             else:
@@ -298,7 +310,7 @@ def start():
                 print("LOG: Current price dropped below price_profit_stop_loss;  ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
                 #cancel_order =cancelOrder(exchange, order_id)
                 #time.sleep(5)
-                print("LOG: Time to cash out .........)
+                print("LOG: Time to cash out .........")
                 sold = marketSell(exchange, quantity)
                 order.market_sell_txn_id = sold.get("orderId")
                 order.sold_flag = true
@@ -313,15 +325,16 @@ def start():
 def runBatch():
     global begin_asset
     run = True
+    
     while run:
-        current_asset = getMyAsset(config.get("root_asset"))
+        #current_asset = getMyAsset(config.get("root_asset"))
         #begin_asset = config.get("day_start_amount")
         
-        daily_loss_limit = begin_asset - (begin_asset* config["day_stop"]["loss"])
-        if float(current_asset["free"]) < daily_loss_limit:
-            run = False
-            print("LOG: Shut down bot coz of daily loss limit triggered", begin_asset, daily_loss_limit, current_asset)
-            break
+        #daily_loss_limit = begin_asset - (begin_asset* config["day_stop"]["loss"])
+        #if float(current_asset["free"]) < daily_loss_limit:
+        #    run = False
+        #    print("LOG: Shut down bot coz of daily loss limit triggered", begin_asset, daily_loss_limit, current_asset)
+        #    break
 
         if run_count > config.get("stop_script"):
             run = False
@@ -332,4 +345,4 @@ def runBatch():
 
     session.close()
     
-runBatch()
+#runBatch()

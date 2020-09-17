@@ -12,7 +12,7 @@ config = {
 ],
 "stop_loss":0.001,
 "profit_rate":0.001,
-"stop_profit_rate":0.005,
+"stop_profit_rate":0.0005,
 "stop_script":10,
 "day_stop": {
     "loss": 0.03,

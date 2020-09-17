@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Boolean, Numeric, Integer, Date, Table, ForeignKey, DateTime, Sequence
 from base import Base
-import datetime
+from datetime import datetime
 #from sqlalchemy.orm import relationship
 
 class Order(Base):
@@ -9,7 +9,7 @@ class Order(Base):
   order_id = Column('order_id', Integer)
   client_order_id = Column('client_order_id', String(50), default="")
   transact_time = Column('transact_time', Integer)
-  created_date = Column(DateTime, default=datetime.datetime)
+#  created_date = Column(DateTime, default=datetime.now())
   server_side_status = Column('server_side_status', String(10), default="")
   symbol = Column('symbol', String(10), default="")
   type = Column('type', String(50), default="")
@@ -29,4 +29,5 @@ class Order(Base):
   sold_flag = Column('sold_flag', Boolean, default=False)
   profit_sale_process_flag = Column('profit_sale_process_flag', Boolean, default=False)
   all_prices = Column('all_prices', String(200), default="")
+  fills = Column('fills', String(500), default="")
 
