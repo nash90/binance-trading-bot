@@ -244,8 +244,8 @@ def start():
 
         db_order = Order(
             symbol = new_order.get("symbol"),
-            order_id = int(new_order.get("order_id")),
-            client_order_id = str(new_order.get("client_order_id")),
+            order_id = new_order.get("orderId"),
+            client_order_id = new_order.get("clientOrderId"),
             side = new_order.get("side"),
             type=new_order.get("type"),
             price= price_mb,
