@@ -39,7 +39,7 @@ def getMyAsset(assetName="BTC"):
 def getCurrentAssetRate(asset="BTCUSDT"):
     rate = 0
     order_book = client.get_order_book(symbol=asset)
-    rate = order_book.get("asks").get(0).get(0)
+    rate = order_book.get("asks")[0][0]
     return float(rate)
 
 
