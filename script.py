@@ -36,12 +36,10 @@ def getMyAsset(assetName="BTC"):
     return asset
 
 
-def getCurrentAssetRate(asset):
+def getCurrentAssetRate(asset="BTCUSDT"):
     rate = 0
-    all_tickers = client.get_all_tickers()
-    for item in all_tickers:
-        if item["symbol"] == asset:
-            rate = item["price"]
+    order_book = client.get_order_book(symbol=asset)
+    rate = order_book.get("asks").get(0).get(0)
     return float(rate)
 
 
@@ -219,7 +217,7 @@ def executeStopLoss(exchange, quantity, order, prices):
     order.all_prices = json.dumps(prices)
     sessionCommit()
     run_count = run_count+ 1
-    time.sleep(300)    
+    time.sleep(150)    
 
 
 def start():
@@ -348,7 +346,7 @@ def runBatch():
             print("LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
             break
         start()
-        time.sleep(5)
+        time.sleep(8)
 
     session.close()
 
