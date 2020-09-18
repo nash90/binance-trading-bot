@@ -2,6 +2,7 @@ from config import config
 from binance.client import Client
 from binance.enums import *
 import json
+import requests
 
 import os
 import time
@@ -215,6 +216,14 @@ def executeStopLoss(exchange, quantity, order, prices):
     order.market_sell_txn_id = sold.get("orderId")
     order.sold_flag = True
     order.all_prices = json.dumps(prices)
+
+    price_ms = round(float(sold.get("price")), 2)
+    fills = sold.get("fills")
+    if len(fills) > 0:
+        price_ms = float(fills[0]["price"])
+        price_ms = round(price_ms, 2)
+    order.marker_sell_price = price_ms
+
     sessionCommit()
     run_count = run_count+ 1
     time.sleep(150)    
@@ -345,8 +354,14 @@ def runBatch():
             run = False
             print("LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
             break
-        start()
-        time.sleep(8)
+
+        try:
+            start()
+        except requests.exceptions.ConnectionError as e:
+            print("Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
+            time.sleep(11)
+
+        time.sleep(11)
 
     session.close()
 
