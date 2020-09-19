@@ -24,6 +24,10 @@ profit_rate = config["profit_rate"]
 stop_profit_rate = config["stop_profit_rate"]
 stop_profit = 0
 run_count = 0
+BOT_FREQUENCY = config.get("bot_freqency")
+PROFIT_SLEEP = config.get("profit_sleep")
+LOSS_SLEEP = config.get("loss_sleep")
+ERROR_SLEEP = config.get("error_sleep")
 
 session = Session()
 # APP constants
@@ -295,6 +299,7 @@ def start():
             if current_price < price_order_stop_loss:
                 print("LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
                 executeStopLoss(exchange, quantity, order, prices)
+                time.sleep(LOSS_SLEEP)
 
             elif current_price > price_profit_margin:
                 print("LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
@@ -329,6 +334,7 @@ def start():
                 #time.sleep(5)
                 print("LOG: Time to cash out .........")
                 executeStopLoss(exchange, quantity, order, prices)
+                time.sleep(PROFIT_SLEEP)
 
 
     ###################
@@ -361,9 +367,9 @@ def runBatch():
             start()
         except requests.exceptions.ConnectionError as e:
             print("Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
-            time.sleep(11)
+            time.sleep(ERROR_SLEEP)
 
-        time.sleep(11)
+        time.sleep(BOT_FREQUENCY)
 
     session.close()
 

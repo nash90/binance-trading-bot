@@ -28,4 +28,8 @@ config = {
 "principle_amount":100,
 "day_start_amount":10000,
 "root_asset": "USDT",
+"bot_freqency":6,
+"profit_sleep": 150,
+"loss_sleep": 300,
+"error_sleep":11
 }
