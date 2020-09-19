@@ -13,6 +13,7 @@ from base import Base
 from base import engine
 from base import Session
 from models import Order
+from helpers import checkBotPermit
 
 
 api_key = config["api_key"]
@@ -306,6 +307,7 @@ def start():
                 executeStopLoss(exchange, quantity, order, prices)
                 run_count += 1
                 time.sleep(LOSS_SLEEP)
+                checkBotPermit()
 
             elif current_price > price_profit_margin:
                 print("LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
@@ -341,6 +343,7 @@ def start():
                 print("LOG: Time to cash out .........")
                 executeStopLoss(exchange, quantity, order, prices)
                 time.sleep(PROFIT_SLEEP)
+                checkBotPermit()
 
 
     ###################
