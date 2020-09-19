@@ -6,6 +6,7 @@ import requests
 
 import os
 import time
+from datetime import datetime
 
 from base import Base
 from base import engine
@@ -270,7 +271,8 @@ def start():
             executed_quantity=round(float(new_order.get("executedQty")),6),
             server_side_status= new_order.get("status"),
             bought_flag=True,
-            fills = json.dumps(fills)
+            fills = json.dumps(fills),
+            created_date = datetime.now()
         )
 
         addDataToDB(db_order)
