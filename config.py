@@ -21,10 +21,6 @@ config = {
     "profit_rate":0.0009,
     "stop_profit_rate":0.0004,
     "stop_script":15,
-    "day_stop": {
-        "loss": 0.03,
-        "profit": 0.05
-    },
     "principle_amount":100,
     "day_start_amount":10000,
     "root_asset": "USDT",
@@ -36,6 +32,6 @@ config = {
         "check_permit":True,
         "daily_loss_margin": -0.003,
         "daily_profit_margin": 0.003,
-        "daily_profit_stop_margin": 0.5
+        "daily_profit_stop_margin": 0.25
     }
 }

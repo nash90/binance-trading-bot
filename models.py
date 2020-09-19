@@ -5,6 +5,7 @@ from datetime import datetime
 
 class Order(Base):
   __tablename__ = 'orders'
+  __table_args__ = {'extend_existing': True}
   id = Column('id', BigInteger, primary_key=True)
   order_id = Column('order_id', BigInteger)
   client_order_id = Column('client_order_id', String(50), default="")
@@ -33,7 +34,14 @@ class Order(Base):
 
 class DailyConfig(Base):
   __tablename__ = 'daily_config'
+  __table_args__ = {'extend_existing': True}
   id = Column('id', BigInteger, primary_key=True)
   trade_date =  Column(Date)
   daily_profit_limit_flag = Column('daily_profit_limit_flag', Boolean, default=False)
   daily_profit_stop_limit_percent = Column('daily_profit_stop_limit_percent', Numeric)
+  daily_loss_margin = Column('daily_loss_margin', Numeric)
+  daily_profit_margin = Column('daily_profit_margin', Numeric)
+  daily_profit_stop_margin = Column('daily_profit_stop_margin', Numeric)
+  daily_profit_stopped_value = Column('daily_profit_stopped_value', Numeric)
+  bot_status = Column('bot_status', String(50))
+  bot_log = Column('bot_log', String(50))

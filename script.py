@@ -1,20 +1,19 @@
-from config import config
-from binance.client import Client
-from binance.enums import *
-import json
-import requests
-from sqlalchemy.sql import text
-from sqlalchemy import cast, Date
 import os
 import time
-from datetime import datetime
-from datetime import timedelta
+import logging
+import json
+import requests
 
+from binance.client import Client
+from binance.enums import *
+from datetime import datetime
+
+from config import config
 from base import Base
 from base import engine
 from base import Session
 from models import Order
-from models import DailyConfig
+
 
 api_key = config["api_key"]
 api_secret = config["api_secret"]
@@ -34,6 +33,11 @@ ERROR_SLEEP = config.get("error_sleep")
 
 session = Session()
 # APP constants
+
+def setDBLogging():
+    logging.basicConfig()
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+
 
 def createTableIfNotExit():
     return Base.metadata.create_all(engine)
@@ -219,7 +223,6 @@ buy_size = round(buy_size, 4)
 
 
 def executeStopLoss(exchange, quantity, order, prices):
-    global run_count
     sold = marketSell(exchange, quantity)
     order.market_sell_txn_id = sold.get("orderId")
     order.sold_flag = True
@@ -233,7 +236,6 @@ def executeStopLoss(exchange, quantity, order, prices):
     order.marker_sell_price = price_ms
 
     sessionCommit()
-    run_count = run_count+ 1
     time.sleep(150)    
 
 
@@ -302,6 +304,7 @@ def start():
             if current_price < price_order_stop_loss:
                 print("LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
                 executeStopLoss(exchange, quantity, order, prices)
+                run_count += 1
                 time.sleep(LOSS_SLEEP)
 
             elif current_price > price_profit_margin:
@@ -368,94 +371,8 @@ def runBatch():
     session.close()
 
 
-if config.get("start_bot"):
-    pass  
-    #runBatch()
-
-
-########
-# Bot permits
-########
-
-def getNetProfitByDay():
-    """
-    conn = engine.connect()
-    s = text(
-        "SELECT SUM(((marker_sell_price - price)/price)*100) as NET_PROFIT "
-        "FROM orders "
-        "WHERE marker_sell_price IS NOT NULL "
-        "AND " 
-        "CAST(created_date AS DATE) = CAST(now() AS DATE)"
-    )
-    res = conn.execute(s).fetchall()
-    """
-    today = datetime.today()
-    all_daily_trades = session.query(Order).filter(
-        cast(Order.created_date, Date) == cast(today, Date)).filter(
-            Order.marker_sell_price.isnot(None)).all()
-    
-    daily_profit = 0
-    for item in all_daily_trades:
-        net = ((item.marker_sell_price - item.price) / item.price )
-
-        daily_profit += net
-
-    return float(daily_profit)
-    
-
-def sleepTillNextDay(today):
-    if today == None:
-        today = datetime.today()
-    date_ini = datetime(today.year, today.month, today.day)
-    next_day = date_ini + timedelta(days=1)
-    sleep_time = (next_day-today).total_seconds()
-    time.sleep(sleep_time)
-
-def checkBotPermit():
-    if config.get("check_permit") == False:
-        return
-
-    daily_loss_margin = config.get("daily_loss_margin")
-    daily_profit_margin = config.get("daily_profit_margin")
-    daily_profit_stop_margin = config.get("daily_profit_stop_margin")
-
-    today = datetime.day()
-    get_daily_configs = session.query(DailyConfig).filter(DailyConfig.trade_date==today).all()
-    daily_config = None
-
-    if len(get_daily_configs) < 1:
-        new_config = DailyConfig(
-            trade_date = today
-        )
-        session.add(new_config)
-        session.commit()
-        daily_config = new_config
-    else:
-        daily_config = get_daily_configs[0]
-
-    current_daily_net_profit = getNetProfitByDay()
-
-    if get_daily_net_profit < daily_loss_margin:
-        sleepTillNextDay(today)
-
-    else:
-        new_daily_profit_stop_limit = current_daily_net_profit - (current_daily_net_profit * daily_profit_stop_margin)
-        
-        if daily_config.daily_profit_limit_flag:    
-
-            if new_daily_profit_stop_limit > daily_config.daily_profit_stop_limit_percent:
-                daily_config.daily_profit_stop_limit_percent  = new_daily_profit_stop_limit
-                session.commit()
-
-            elif current_daily_net_profit < daily_config.daily_profit_stop_limit_percent:
-                sleepTillNextDay(today)
-
-        else:
-            if new_daily_profit_stop_limit > daily_profit_margin:
-                daily_config.daily_profit_stop_limit_percent = new_daily_profit_stop_limit
-                session.commit()
-
-
+if config.get("start_bot"):      
+    runBatch()
 
             
 
