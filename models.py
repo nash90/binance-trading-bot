@@ -31,3 +31,9 @@ class Order(Base):
   all_prices = Column('all_prices', String(200), default="")
   fills = Column('fills', String(500), default="")
 
+class DailyConfig(Base):
+  __tablename__ = 'daily_config'
+  id = Column('id', BigInteger, primary_key=True)
+  trade_date =  Column(Date)
+  daily_profit_limit_flag = Column('daily_profit_limit_flag', Boolean, default=False)
+  daily_profit_stop_limit_percent = Column('daily_profit_stop_limit_percent', Numeric)
