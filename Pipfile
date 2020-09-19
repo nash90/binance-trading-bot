@@ -9,6 +9,7 @@ verify_ssl = true
 python-binance = "*"
 sqlalchemy = "*"
 sqlalchemy-utils = "*"
+psycopg2-binary = "*"
 
 [requires]
 python_version = "3.7"

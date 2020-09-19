@@ -1,15 +1,15 @@
-from sqlalchemy import Column, String, Boolean, Numeric, Integer, Date, Table, ForeignKey, DateTime, Sequence
+from sqlalchemy import Column, String, Boolean, Numeric, Integer, BigInteger, Date, Table, ForeignKey, DateTime, Sequence
 from base import Base
 from datetime import datetime
 #from sqlalchemy.orm import relationship
 
 class Order(Base):
   __tablename__ = 'orders'
-  id = Column('id', Integer, primary_key=True)
-  order_id = Column('order_id', Integer)
+  id = Column('id', BigInteger, primary_key=True)
+  order_id = Column('order_id', BigInteger)
   client_order_id = Column('client_order_id', String(50), default="")
-  transact_time = Column('transact_time', Integer)
-#  created_date = Column(DateTime, default=datetime.now())
+  transact_time = Column('transact_time', BigInteger)
+  created_date = Column(DateTime, default=datetime.now())
   server_side_status = Column('server_side_status', String(10), default="")
   symbol = Column('symbol', String(10), default="")
   type = Column('type', String(50), default="")
