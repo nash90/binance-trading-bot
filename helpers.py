@@ -99,7 +99,7 @@ def checkBotPermit():
                 session.commit()
                 sleepTillNextDay(today)
             else:
-                print("BOTPERMIT: Continue bot without new config changes: ", current_daily_net_profit)
+                print("BOTPERMIT: Continue bot without new config changes 2: ", current_daily_net_profit)
 
 
         else:

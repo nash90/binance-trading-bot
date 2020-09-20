@@ -306,8 +306,8 @@ def start():
                 print("LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
                 executeStopLoss(exchange, quantity, order, prices)
                 run_count += 1
-                time.sleep(LOSS_SLEEP)
                 checkBotPermit()
+                time.sleep(LOSS_SLEEP)
 
             elif current_price > price_profit_margin:
                 print("LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
@@ -342,8 +342,8 @@ def start():
                 #time.sleep(5)
                 print("LOG: Time to cash out .........")
                 executeStopLoss(exchange, quantity, order, prices)
-                time.sleep(PROFIT_SLEEP)
                 checkBotPermit()
+                time.sleep(PROFIT_SLEEP)
 
 
     ###################
