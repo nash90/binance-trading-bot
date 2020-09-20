@@ -76,7 +76,7 @@ def checkBotPermit():
 
 
     if current_daily_net_profit < daily_loss_margin:
-        print("BOTPERMIT: Daily loss margin exceeded, Sleeping a day!!!")
+        print("BOTPERMIT: Daily loss margin exceeded, Sleeping a day!!!",current_daily_net_profit,daily_loss_margin)
         daily_config.bot_status = "SLEEPING"
         daily_config.daily_profit_stopped_value = current_daily_net_profit
         session.commit()
@@ -85,7 +85,7 @@ def checkBotPermit():
         new_daily_profit_stop_limit = current_daily_net_profit - (current_daily_net_profit * daily_profit_stop_margin)
         
         if daily_config.daily_profit_limit_flag:    
-            print("BOTPERMIT: Bot daily profit limit setting is ON")
+            print("BOTPERMIT: Bot daily profit limit setting is ON",current_daily_net_profit,new_daily_profit_stop_limit,daily_config.daily_profit_stop_limit_percent)
             old_daily_profit_stop_limit = daily_config.daily_profit_stop_limit_percent
             if new_daily_profit_stop_limit > old_daily_profit_stop_limit:
                 print("BOTPERMIT: Potential to increase daily profit limit", new_daily_profit_stop_limit, old_daily_profit_stop_limit)
@@ -98,10 +98,13 @@ def checkBotPermit():
                 daily_config.daily_profit_stopped_value = current_daily_net_profit
                 session.commit()
                 sleepTillNextDay(today)
+            else:
+                print("BOTPERMIT: Continue bot without new config changes: ", current_daily_net_profit)
+
 
         else:
             if current_daily_net_profit > daily_profit_margin:
-                print("BOTPERMIT: Current Daily Net profit crossed Daily Profit Margin, store it in DB")
+                print("BOTPERMIT: Current Daily Net profit crossed Daily Profit Margin, store it in DB",current_daily_net_profit,daily_profit_margin)
                 daily_config.daily_profit_limit_flag = True
                 daily_config.daily_profit_stop_limit_percent = new_daily_profit_stop_limit
                 session.commit()
