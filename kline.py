@@ -20,8 +20,10 @@ symbol = config.get("crypto_list")[0]["exchange"]
 KLINE_INTERVAL_5MINUTE = Client.KLINE_INTERVAL_15MINUTE
 KLINE_INTERVAL_15MINUTE = Client.KLINE_INTERVAL_15MINUTE
 FETCH_LENGTH = "1 day ago JST"
-LOG_ELEMENTS = ["Open_time", "Open", "Close", "candle_pattern"]
+LOG_ELEMENTS = ["Open_time", "Open", "Close", "candle_pattern", "candle_score", "candle_cumsum", "signal2"]
 INVALID_CANDLE_SLEEP = config.get("bot_permit").get("invalid_candlestick_sleep")
+
+CONSERVATIVE_VALIDATION = config.get("bot_permit").get("conservative_validation")
 
 def getCandleStick(symbol = "BTCUSDT", interval=Client.KLINE_INTERVAL_5MINUTE, length =FETCH_LENGTH):
   #candles = client.get_klines(symbol=symbol, interval=interval)
@@ -197,7 +199,15 @@ def runValidations(current, return_data):
     print("KLINE_LOG: STOP Hanging_Man_bearish Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False 
-
+  elif CONSERVATIVE_VALIDATION == True:
+    if "doji" in current.candle_pattern:
+      print("KLINE_LOG: STOP doji Detected!!", return_data)
+      time.sleep(INVALID_CANDLE_SLEEP)
+      return False 
+    elif "" in current.candle_pattern:
+      print("KLINE_LOG: STOP Unidentified Candle Detected!!", return_data)
+      time.sleep(INVALID_CANDLE_SLEEP)
+      return False
   return True
 
 
@@ -208,7 +218,7 @@ def permitCandleStick():
   current = latest_signals.iloc[0]
 
   return_data = latest_signals[LOG_ELEMENTS]
-  return_data = return_data.to_dict()
+  return_data = return_data.to_dict('records')
 
   if runValidations(current, return_data) == False:
     return [False, return_data]
