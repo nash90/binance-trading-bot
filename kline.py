@@ -20,10 +20,11 @@ symbol = config.get("crypto_list")[0]["exchange"]
 KLINE_INTERVAL_5MINUTE = Client.KLINE_INTERVAL_15MINUTE
 KLINE_INTERVAL_15MINUTE = Client.KLINE_INTERVAL_15MINUTE
 FETCH_LENGTH = "1 day ago JST"
-LOG_ELEMENTS = ["Open_time", "Open", "Close", "candle_pattern", "candle_score", "candle_cumsum", "signal2"]
+LOG_ELEMENTS = ["Open_time_str", "Open", "Close", "candle_pattern", "candle_score", "candle_cumsum", "signal2"]
 INVALID_CANDLE_SLEEP = config.get("bot_permit").get("invalid_candlestick_sleep")
 
 CONSERVATIVE_VALIDATION = config.get("bot_permit").get("conservative_validation")
+DATETIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
 
 def getCandleStick(symbol = "BTCUSDT", interval=Client.KLINE_INTERVAL_5MINUTE, length =FETCH_LENGTH):
   #candles = client.get_klines(symbol=symbol, interval=interval)
@@ -164,6 +165,7 @@ def getCandleAndClassify(symbol = symbol, interval = KLINE_INTERVAL_5MINUTE):
   df['Open_time'] = pd.to_datetime(df['Open_time'],unit="s")
   jst = pytz.timezone('Asia/Tokyo')
   df['Open_time'] = df['Open_time'].dt.tz_localize(pytz.utc).dt.tz_convert(jst)
+  df['Open_time_str'] = df['Open_time'].apply(lambda x: x.strftime(DATETIME_FORMAT))
   #print(df["Open_time"])
 
   return df
