@@ -183,6 +183,10 @@ def runValidations(current, return_data):
     print("KLINE_LOG: STOP shooting_Star_bearish Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False 
+  elif "shooting_Star_bullish" in current.candle_pattern:
+    print("KLINE_LOG: STOP shooting_Star_bullish Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
   elif "bearish_harami" in current.candle_pattern:
     print("KLINE_LOG: STOP bearish_harami Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
@@ -193,6 +197,10 @@ def runValidations(current, return_data):
     return False 
   elif "bearish_reversal" in current.candle_pattern:
     print("KLINE_LOG: STOP bearish_reversal Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
+  elif "bullish_reversal" in current.candle_pattern:
+    print("KLINE_LOG: STOP bullish_reversal Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False 
   elif "Hanging_Man_bearish" in current.candle_pattern:
@@ -222,8 +230,8 @@ def permitCandleStick():
 
   if runValidations(current, return_data) == False:
     return [False, return_data]
-
-  print("KLINE_LOG: latest_signals[LOG_ELEMENTS]", return_data)
+  pattern = return_data[0]["candle_pattern"] if return_data[0]["candle_pattern"] != "" else "N/A"
+  print("KLINE_LOG: latest_signals[LOG_ELEMENTS]", pattern,return_data)
 
   return [True, return_data]
 
