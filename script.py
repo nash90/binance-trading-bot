@@ -295,7 +295,7 @@ def start():
             [validated, latest_candels] = permitCandleStick()
         
         if validated:
-            createFreshOrder(exchange, current_price, latest_candels)
+            pass#createFreshOrder(exchange, current_price, latest_candels)
 
     else:
         print("LOG: An Asset to Sell is Found", current_price, order.id)
