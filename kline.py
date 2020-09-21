@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 #import matplotlib.pyplot as plt
 import pytz
+import time
 
 from binance.client import Client
 from binance.enums import *
