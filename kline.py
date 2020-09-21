@@ -76,7 +76,7 @@ def candle_score(lst_0,lst_1,lst_2):
     
     if doji:
         strCandle='doji'
-    if    Last_2_Negetives:
+    if Last_2_Negetives:
         strCandle=strCandle+'/ '+'Last_2_Negetives'    
     if evening_star:
         strCandle=strCandle+'/ '+'evening_star'
@@ -135,10 +135,11 @@ def classifyCandles(df):
 
     for c in range(2,len(df_candle)):
         cscore,cpattern=0,''
+        lst_3=[df_candle['Open'].iloc[c-3],df_candle['High'].iloc[c-3],df_candle['Low'].iloc[c-3],df_candle['Close'].iloc[c-3]]
         lst_2=[df_candle['Open'].iloc[c-2],df_candle['High'].iloc[c-2],df_candle['Low'].iloc[c-2],df_candle['Close'].iloc[c-2]]
         lst_1=[df_candle['Open'].iloc[c-1],df_candle['High'].iloc[c-1],df_candle['Low'].iloc[c-1],df_candle['Close'].iloc[c-1]]
         lst_0=[df_candle['Open'].iloc[c],df_candle['High'].iloc[c],df_candle['Low'].iloc[c],df_candle['Close'].iloc[c]]
-        cscore,cpattern=candle_score(lst_0,lst_1,lst_2)    
+        cscore,cpattern=candle_score(lst_0,lst_1,lst_2, lst_3)    
         df_candle['candle_score'].iat[c]=cscore
         df_candle['candle_pattern'].iat[c]=cpattern
     
@@ -166,20 +167,53 @@ def getCandleAndClassify(symbol = symbol, interval = KLINE_INTERVAL_5MINUTE):
   return df
 
 
+def runValidations(current, return_data):
+
+  if "Last_2_Negetives" in current.candle_pattern:
+    print("KLINE_LOG: STOP Last 2 Negetives Pattern Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False
+  elif "evening_star" in current.candle_pattern:
+    print("KLINE_LOG: STOP evening_star Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False  
+  elif "shooting_Star_bearish" in current.candle_pattern:
+    print("KLINE_LOG: STOP shooting_Star_bearish Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
+  elif "bearish_harami" in current.candle_pattern:
+    print("KLINE_LOG: STOP bearish_harami Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False
+  elif "Bearish_Engulfing" in current.candle_pattern:
+    print("KLINE_LOG: STOP Bearish_Engulfing Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
+  elif "bearish_reversal" in current.candle_pattern:
+    print("KLINE_LOG: STOP bearish_reversal Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
+  elif "Hanging_Man_bearish" in current.candle_pattern:
+    print("KLINE_LOG: STOP Hanging_Man_bearish Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
+
+  return True
+
+
 def permitCandleStick():
   df = getCandleAndClassify()
 
   latest_signals = df.nlargest(5,"Open_time")
   current = latest_signals.iloc[0]
-  
-  if "Last_2_Negetives" in current.candle_pattern:
-    print("KLINE_LOG: Last 2 Negetives Pattern Detected!!", latest_signals[LOG_ELEMENTS])
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return [False, latest_signals]
-  print(latest_signals[LOG_ELEMENTS])
 
   return_data = latest_signals[LOG_ELEMENTS]
   return_data = return_data.to_dict()
+
+  if runValidations(current, return_data) == False:
+    return [False, return_data]
+
+  print("KLINE_LOG: latest_signals[LOG_ELEMENTS]", return_data)
 
   return [True, return_data]
 
