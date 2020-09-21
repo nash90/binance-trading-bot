@@ -19,6 +19,7 @@ symbol = config.get("crypto_list")[0]["exchange"]
 KLINE_INTERVAL_5MINUTE = Client.KLINE_INTERVAL_15MINUTE
 KLINE_INTERVAL_15MINUTE = Client.KLINE_INTERVAL_15MINUTE
 FETCH_LENGTH = "1 day ago JST"
+LOG_ELEMENTS = ["Open_time","Open", "High", "Low", "Close", "candle_pattern", "candle_cumsum", "signal", "signal2"]
 
 def getCandleStick(symbol = "BTCUSDT", interval=Client.KLINE_INTERVAL_5MINUTE, length =FETCH_LENGTH):
   #candles = client.get_klines(symbol=symbol, interval=interval)
@@ -73,6 +74,8 @@ def candle_score(lst_0,lst_1,lst_2):
     
     if doji:
         strCandle='doji'
+    if    Last_2_Negetives:
+        strCandle=strCandle+'/ '+'Last_2_Negetives'    
     if evening_star:
         strCandle=strCandle+'/ '+'evening_star'
         candle_score=candle_score-1
@@ -116,9 +119,7 @@ def candle_score(lst_0,lst_1,lst_2):
     if    Hanging_Man_bullish:
         strCandle=strCandle+'/ '+'Hanging_Man_bullish'
         candle_score=candle_score+1
-    if    Last_2_Negetives:
-        strCandle=strCandle+'/ '+'Last_2_Negetives'
-        
+
         
     #return candle_score
     return candle_score,strCandle
@@ -168,10 +169,10 @@ def permitCandleStick():
 
   latest_signals = df.nlargest(5,"Open_time")
   current = latest_signals.iloc[0]
-  print(latest_signals)
+  print(latest_signals[LOG_ELEMENTS])
   if "Last_2_Negetives" in current.candle_pattern:
     print("LOG: Last 2 Negetives Pattern Detected!!")
-    print(latest_signals)
+    print(latest_signals[LOG_ELEMENTS])
     return False
 
   return True

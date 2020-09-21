@@ -237,8 +237,7 @@ def executeStopLoss(exchange, quantity, order, prices):
         price_ms = round(price_ms, 2)
     order.marker_sell_price = price_ms
 
-    sessionCommit()
-    time.sleep(150)    
+    sessionCommit()   
 
 
 def createFreshOrder(exchange, current_price):
