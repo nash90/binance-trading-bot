@@ -33,6 +33,7 @@ config = {
         "daily_loss_margin": -0.003,
         "daily_profit_margin": 0.003,
         "daily_profit_stop_margin": 0.25,
-        "validate_candlestick":True
+        "validate_candlestick":True,
+        "invalid_candlestick_sleep":20
     }
 }
