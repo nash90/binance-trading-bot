@@ -240,7 +240,7 @@ def executeStopLoss(exchange, quantity, order, prices):
     sessionCommit()   
 
 
-def createFreshOrder(exchange, current_price):
+def createFreshOrder(exchange, current_price, latest_candels):
     ammount = buy_size / current_price
     ammount = round(ammount, 6)
     new_order = marketBuy(exchange, ammount)   
@@ -261,8 +261,9 @@ def createFreshOrder(exchange, current_price):
         executed_quantity=round(float(new_order.get("executedQty")),6),
         server_side_status= new_order.get("status"),
         bought_flag=True,
-        fills = json.dumps(fills),
-        created_date = datetime.now()
+        fills = json.dumps(fills)[:499],
+        created_date = datetime.now(),
+        logs = json.dumps(latest_candels)[:2000]
     )
 
     addDataToDB(db_order)
@@ -289,11 +290,12 @@ def start():
     if order == None:
         print("LOG: Try to Create New Fresh Order for Target: ", current_price)
         validated = True
+        latest_candels = []
         if config.get("bot_permit").get("validate_candlestick") == True:
-            validated = permitCandleStick()
+            [validated, latest_candels] = permitCandleStick()
         
         if validated:
-            createFreshOrder(exchange, current_price)
+            createFreshOrder(exchange, current_price, latest_candels)
 
     else:
         print("LOG: An Asset to Sell is Found", current_price, order.id)

@@ -31,6 +31,7 @@ class Order(Base):
   profit_sale_process_flag = Column('profit_sale_process_flag', Boolean, default=False)
   all_prices = Column('all_prices', String(200), default="")
   fills = Column('fills', String(500), default="")
+  logs = Column('logs', String(2000), default="")
 
 class DailyConfig(Base):
   __tablename__ = 'daily_config'

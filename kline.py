@@ -173,13 +173,15 @@ def permitCandleStick():
   current = latest_signals.iloc[0]
   
   if "Last_2_Negetives" in current.candle_pattern:
-    print("KLINE_LOG: Last 2 Negetives Pattern Detected!!")
-    print(latest_signals[LOG_ELEMENTS])
+    print("KLINE_LOG: Last 2 Negetives Pattern Detected!!", latest_signals[LOG_ELEMENTS])
     time.sleep(INVALID_CANDLE_SLEEP)
-    return False
+    return [False, latest_signals]
   print(latest_signals[LOG_ELEMENTS])
 
-  return True
+  return_data = latest_signals[LOG_ELEMENTS]
+  return_data = return_data.to_dict()
+
+  return [True, return_data]
 
   
 
