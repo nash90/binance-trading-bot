@@ -171,7 +171,7 @@ def permitCandleStick():
   print(latest_signals)
   if "Last_2_Negetives" in current.candle_pattern:
     print("LOG: Last 2 Negetives Pattern Detected!!")
-    console.log(latest_signals)
+    print(latest_signals)
     return False
 
   return True
