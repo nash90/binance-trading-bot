@@ -20,6 +20,7 @@ KLINE_INTERVAL_5MINUTE = Client.KLINE_INTERVAL_15MINUTE
 KLINE_INTERVAL_15MINUTE = Client.KLINE_INTERVAL_15MINUTE
 FETCH_LENGTH = "1 day ago JST"
 LOG_ELEMENTS = ["Open_time","Open", "High", "Low", "Close", "candle_pattern", "candle_cumsum", "signal", "signal2"]
+INVALID_CANDLE_SLEEP = config.get("bot_permit").get("invalid_candlestick_sleep")
 
 def getCandleStick(symbol = "BTCUSDT", interval=Client.KLINE_INTERVAL_5MINUTE, length =FETCH_LENGTH):
   #candles = client.get_klines(symbol=symbol, interval=interval)
@@ -171,8 +172,9 @@ def permitCandleStick():
   current = latest_signals.iloc[0]
   
   if "Last_2_Negetives" in current.candle_pattern:
-    print("LOG: Last 2 Negetives Pattern Detected!!")
+    print("KLINE_LOG: Last 2 Negetives Pattern Detected!!")
     print(latest_signals[LOG_ELEMENTS])
+    time.sleep(INVALID_CANDLE_SLEEP)
     return False
   print(latest_signals[LOG_ELEMENTS])
 
