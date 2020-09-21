@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import pytz
 
 from binance.client import Client
@@ -164,9 +164,6 @@ def getCandleAndClassify(symbol = symbol, interval = KLINE_INTERVAL_5MINUTE):
 
 
 def permitCandleStick():
-  if config.get("bot_permit").get("validate_candlestick") == False:
-    return
-
   df = getCandleAndClassify()
 
   latest_signals = df.nlargest(5,"Open_time")
