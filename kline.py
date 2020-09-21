@@ -29,7 +29,7 @@ def getCandleStick(symbol = "BTCUSDT", interval=Client.KLINE_INTERVAL_5MINUTE, l
 
   return candles
 
-def candle_score(lst_0,lst_1,lst_2):    
+def candle_score(lst_0,lst_1,lst_2, lst3):    
     
     O_0,H_0,L_0,C_0=lst_0[0],lst_0[1],lst_0[2],lst_0[3]
     O_1,H_1,L_1,C_1=lst_1[0],lst_1[1],lst_1[2],lst_1[3]
