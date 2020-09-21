@@ -10,6 +10,7 @@ python-binance = "*"
 sqlalchemy = "*"
 sqlalchemy-utils = "*"
 psycopg2-binary = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.7"

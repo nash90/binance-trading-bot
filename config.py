@@ -32,6 +32,7 @@ config = {
         "check_permit":True,
         "daily_loss_margin": -0.003,
         "daily_profit_margin": 0.003,
-        "daily_profit_stop_margin": 0.25
+        "daily_profit_stop_margin": 0.25,
+        "validate_candlestick":True
     }
 }

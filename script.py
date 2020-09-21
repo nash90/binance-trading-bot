@@ -14,6 +14,7 @@ from base import engine
 from base import Session
 from models import Order
 from helpers import checkBotPermit
+from kline import permitCandleStick
 
 
 api_key = config["api_key"]
@@ -240,6 +241,33 @@ def executeStopLoss(exchange, quantity, order, prices):
     time.sleep(150)    
 
 
+def createFreshOrder(exchange, current_price):
+    ammount = buy_size / current_price
+    ammount = round(ammount, 6)
+    new_order = marketBuy(exchange, ammount)   
+    price_mb = round(float(new_order.get("price")), 2)
+    fills = new_order.get("fills")
+    if len(fills) > 0:
+        price_mb = float(fills[0]["price"])
+        price_mb = round(price_mb, 2)
+
+    db_order = Order(
+        symbol = new_order.get("symbol"),
+        order_id = new_order.get("orderId"),
+        client_order_id = new_order.get("clientOrderId"),
+        side = new_order.get("side"),
+        type=new_order.get("type"),
+        price= price_mb,
+        orig_quantity=round(float(new_order.get("origQty")),6),
+        executed_quantity=round(float(new_order.get("executedQty")),6),
+        server_side_status= new_order.get("status"),
+        bought_flag=True,
+        fills = json.dumps(fills),
+        created_date = datetime.now()
+    )
+
+    addDataToDB(db_order)
+
 def start():
     #print("LOG: New Cycle)
     global run_count
@@ -260,32 +288,13 @@ def start():
     ###################
 
     if order == None:
-        print("LOG: Create New Fresh Order for Target: ", current_price)
-        ammount = buy_size / current_price
-        ammount = round(ammount, 6)
-        new_order = marketBuy(exchange, ammount)   
-        price_mb = round(float(new_order.get("price")), 2)
-        fills = new_order.get("fills")
-        if len(fills) > 0:
-            price_mb = float(fills[0]["price"])
-            price_mb = round(price_mb, 2)
-
-        db_order = Order(
-            symbol = new_order.get("symbol"),
-            order_id = new_order.get("orderId"),
-            client_order_id = new_order.get("clientOrderId"),
-            side = new_order.get("side"),
-            type=new_order.get("type"),
-            price= price_mb,
-            orig_quantity=round(float(new_order.get("origQty")),6),
-            executed_quantity=round(float(new_order.get("executedQty")),6),
-            server_side_status= new_order.get("status"),
-            bought_flag=True,
-            fills = json.dumps(fills),
-            created_date = datetime.now()
-        )
-
-        addDataToDB(db_order)
+        print("LOG: Try to Create New Fresh Order for Target: ", current_price)
+        validated = True
+        if config.get("bot_permit").get("validate_candlestick") == True:
+            validated = permitCandleStick()
+        
+        if validated:
+            createFreshOrder(exchange, current_price)
 
     else:
         print("LOG: An Asset to Sell is Found", current_price, order.id)
