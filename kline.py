@@ -169,11 +169,12 @@ def permitCandleStick():
 
   latest_signals = df.nlargest(5,"Open_time")
   current = latest_signals.iloc[0]
-  print(latest_signals[LOG_ELEMENTS])
+  
   if "Last_2_Negetives" in current.candle_pattern:
     print("LOG: Last 2 Negetives Pattern Detected!!")
     print(latest_signals[LOG_ELEMENTS])
     return False
+  print(latest_signals[LOG_ELEMENTS])
 
   return True
 
