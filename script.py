@@ -28,6 +28,7 @@ profit_rate = config["profit_rate"]
 stop_profit_rate = config["stop_profit_rate"]
 stop_profit = 0
 run_count = 0
+STOP_COUNT = config.get("stop_script")
 BOT_FREQUENCY = config.get("bot_freqency")
 PROFIT_SLEEP = config.get("profit_sleep")
 LOSS_SLEEP = config.get("loss_sleep")
@@ -315,7 +316,8 @@ def start():
             if current_price < price_order_stop_loss:
                 print("LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
                 executeStopLoss(exchange, quantity, order, prices)
-                run_count += 1
+                if STOP_COUNT > 0:
+                    run_count += 1
                 checkBotPermit()
                 time.sleep(LOSS_SLEEP)
 
@@ -368,7 +370,7 @@ def runBatch():
         session.query(Order).filter(Order.sold_flag==False).update({Order.sold_flag:True})
 
     while run:
-        if run_count > config.get("stop_script"):
+        if run_count > STOP_COUNT:
             run = False
             print("LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
             break

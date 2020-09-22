@@ -20,7 +20,7 @@ config = {
     "stop_loss":0.001,
     "profit_rate":0.0009,
     "stop_profit_rate":0.0004,
-    "stop_script":15,
+    "stop_script":0,
     "principle_amount":100,
     "day_start_amount":10000,
     "root_asset": "USDT",
