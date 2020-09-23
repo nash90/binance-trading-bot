@@ -90,8 +90,7 @@ def candle_score(lst_0,lst_1,lst_2, lst3):
 
     Hanging_Man_bearish=(C_1 > O_1) & (C_0>((O_1 + C_1)/2)) & (C_0 < O_1) & hammer
 
-    if REJECT_LAST_2_NEGETIVES:
-      Last_2_Negetives = (O_1 > C_1) & (O_2 > C_2)
+    Last_2_Negetives = REJECT_LAST_2_NEGETIVES & (O_1 > C_1) & (O_2 > C_2)
 
     strCandle=''
     candle_score=0
