@@ -23,8 +23,26 @@ FETCH_LENGTH = "1 day ago JST"
 LOG_ELEMENTS = ["Open_time_str", "Open", "Close", "candle_pattern", "candle_score", "candle_cumsum", "signal2"]
 INVALID_CANDLE_SLEEP = config.get("bot_permit").get("invalid_candlestick_sleep")
 
-CONSERVATIVE_VALIDATION = config.get("bot_permit").get("conservative_validation")
 DATETIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
+
+REJECT_DOJI = config.get("bot_permit").get("reject_candles").get("doji")
+REJECT_EVENING_STAR = config.get("bot_permit").get("reject_candles").get("evening_star")
+REJECT_MORNING_STAR = config.get("bot_permit").get("reject_candles").get("morning_star")
+REJECT_SHOOTING_STAR_BEARISH = config.get("bot_permit").get("reject_candles").get("shooting_Star_bearish")
+REJECT_SHOOTING_STAR_BULLISH = config.get("bot_permit").get("reject_candles").get("shooting_Star_bullish")
+REJECT_HAMMER = config.get("bot_permit").get("reject_candles").get("hammer")
+REJECT_INVERTED_HAMMER = config.get("bot_permit").get("reject_candles").get("inverted_hammer")
+REJECT_BEARISH_HARAMI = config.get("bot_permit").get("reject_candles").get("bearish_harami")
+REJECT_BULLISH_HARAMI = config.get("bot_permit").get("reject_candles").get("Bullish_Harami")
+REJECT_BEARISH_ENGULFING = config.get("bot_permit").get("reject_candles").get("Bearish_Engulfing")
+REJECT_BULLISH_ENGULFING = config.get("bot_permit").get("reject_candles").get("Bullish_Engulfing")
+REJECT_BULLISH_REVERSAL = config.get("bot_permit").get("reject_candles").get("bullish_reversal")
+REJECT_BEARISH_REVERSAL = config.get("bot_permit").get("reject_candles").get("bearish_reversal")
+REJECT_PIERCING_LINE_BULLISH = config.get("bot_permit").get("reject_candles").get("Piercing_Line_bullish")
+REJECT_HANGING_MAN_BEARISH = config.get("bot_permit").get("reject_candles").get("Hanging_Man_bearish")
+REJECT_HANGING_MAN_BULLISH = config.get("bot_permit").get("reject_candles").get("Hanging_Man_bullish")
+REJECT_LAST_2_NEGETIVES = config.get("bot_permit").get("reject_candles").get("Last_2_Negetives")
+REJECT_UNIDENTIFIED = config.get("bot_permit").get("reject_candles").get("Unidentified")
 
 def getCandleStick(symbol = "BTCUSDT", interval=Client.KLINE_INTERVAL_5MINUTE, length =FETCH_LENGTH):
   #candles = client.get_klines(symbol=symbol, interval=interval)
@@ -106,7 +124,7 @@ def candle_score(lst_0,lst_1,lst_2, lst3):
     if    Bearish_Engulfing:
         strCandle=strCandle+'/ '+'Bearish_Engulfing'
         candle_score=candle_score-1
-    if    bullish_reversal:
+    if    Bullish_Engulfing:
         strCandle=strCandle+'/ '+'Bullish_Engulfing'
         candle_score=candle_score+1
     if    bullish_reversal:
@@ -172,53 +190,80 @@ def getCandleAndClassify(symbol = symbol, interval = KLINE_INTERVAL_5MINUTE):
 
 
 def runValidations(current, return_data):
-
-  if "Last_2_Negetives" in current.candle_pattern:
-    print("KLINE_LOG: STOP Last 2 Negetives Pattern Detected!!", return_data)
+  if REJECT_DOJI and "doji" in current.candle_pattern:
+    print("KLINE_LOG: STOP doji Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False
-  elif "evening_star" in current.candle_pattern:
+  elif REJECT_EVENING_STAR and "evening_star" in current.candle_pattern:
     print("KLINE_LOG: STOP evening_star Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False  
-  elif "shooting_Star_bearish" in current.candle_pattern:
+  elif REJECT_MORNING_STAR and "morning_star" in current.candle_pattern:
+    print("KLINE_LOG: STOP morning_star Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
+  elif REJECT_SHOOTING_STAR_BEARISH and "shooting_Star_bearish" in current.candle_pattern:
     print("KLINE_LOG: STOP shooting_Star_bearish Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False 
-  elif "shooting_Star_bullish" in current.candle_pattern:
+  elif REJECT_SHOOTING_STAR_BULLISH and "shooting_Star_bullish" in current.candle_pattern:
     print("KLINE_LOG: STOP shooting_Star_bullish Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False 
-  elif "bearish_harami" in current.candle_pattern:
+  elif REJECT_HAMMER and "hammer" in current.candle_pattern:
+    print("KLINE_LOG: STOP hammer Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False  
+  elif REJECT_INVERTED_HAMMER and "inverted_hammer" in current.candle_pattern:
+    print("KLINE_LOG: STOP inverted_hammer Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
+  elif REJECT_BEARISH_HARAMI and "bearish_harami" in current.candle_pattern:
     print("KLINE_LOG: STOP bearish_harami Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False
-  elif "Bearish_Engulfing" in current.candle_pattern:
+  elif REJECT_BULLISH_HARAMI and "Bullish_Harami" in current.candle_pattern:
+    print("KLINE_LOG: STOP Bullish_Harami Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False
+  elif REJECT_BEARISH_ENGULFING and "Bearish_Engulfing" in current.candle_pattern:
     print("KLINE_LOG: STOP Bearish_Engulfing Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False 
-  elif "bearish_reversal" in current.candle_pattern:
-    print("KLINE_LOG: STOP bearish_reversal Detected!!", return_data)
+  elif REJECT_BULLISH_ENGULFING and "Bullish_Engulfing" in current.candle_pattern:
+    print("KLINE_LOG: STOP Bullish_Engulfing Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False 
-  elif "bullish_reversal" in current.candle_pattern:
+  elif REJECT_BULLISH_REVERSAL and "bullish_reversal" in current.candle_pattern:
     print("KLINE_LOG: STOP bullish_reversal Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False 
-  elif "Hanging_Man_bearish" in current.candle_pattern:
+  elif REJECT_BEARISH_REVERSAL and "bearish_reversal" in current.candle_pattern:
+    print("KLINE_LOG: STOP bearish_reversal Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
+  elif REJECT_PIERCING_LINE_BULLISH and "Piercing_Line_bullish" in current.candle_pattern:
+    print("KLINE_LOG: STOP bullish_reversal Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
+  elif REJECT_HANGING_MAN_BEARISH and "Hanging_Man_bearish" in current.candle_pattern:
     print("KLINE_LOG: STOP Hanging_Man_bearish Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False 
-  elif CONSERVATIVE_VALIDATION == True:
-    if "doji" in current.candle_pattern:
-      print("KLINE_LOG: STOP doji Detected!!", return_data)
-      time.sleep(INVALID_CANDLE_SLEEP)
-      return False 
-    elif current.candle_pattern == "":
-      print("KLINE_LOG: STOP Unidentified Candle Detected!!", return_data)
-      time.sleep(INVALID_CANDLE_SLEEP)
-      return False
-  return True
+  elif REJECT_HANGING_MAN_BULLISH and "Hanging_Man_bullish" in current.candle_pattern:
+    print("KLINE_LOG: STOP Hanging_Man_bullish Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False 
+  elif REJECT_UNIDENTIFIED and current.candle_pattern == "":
+    print("KLINE_LOG: STOP Unidentified Candle Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False
+  elif REJECT_LAST_2_NEGETIVES and "Last_2_Negetives" in current.candle_pattern:
+    print("KLINE_LOG: STOP Last 2 Negetives Pattern Detected!!", return_data)
+    time.sleep(INVALID_CANDLE_SLEEP)
+    return False
+  
+
 
 
 def permitCandleStick():

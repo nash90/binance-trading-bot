@@ -34,7 +34,26 @@ config = {
         "daily_profit_margin": 0.003,
         "daily_profit_stop_margin": 0.25,
         "validate_candlestick":True,
-        "conservative_validation": False,
-        "invalid_candlestick_sleep":20
-    }
+        "invalid_candlestick_sleep":20,
+        "reject_candles": {
+            "doji": True,
+            "evening_star": True,
+            "morning_star": False,
+            "shooting_Star_bearish": True,
+            "shooting_Star_bullish": True,
+            "hammer": False,
+            "inverted_hammer": False,
+            "bearish_harami": True,
+            "Bullish_Harami": False,
+            "Bearish_Engulfing": True,
+            "Bullish_Engulfing": False,
+            "bullish_reversal": True,
+            "bearish_reversal": True,
+            "Piercing_Line_bullish": False,
+            "Hanging_Man_bearish": True,
+            "Hanging_Man_bullish": False,
+            "": True,
+            "Last_2_Negetives":True
+        }
+    },
 }
