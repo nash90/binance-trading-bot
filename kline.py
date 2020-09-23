@@ -90,7 +90,8 @@ def candle_score(lst_0,lst_1,lst_2, lst3):
 
     Hanging_Man_bearish=(C_1 > O_1) & (C_0>((O_1 + C_1)/2)) & (C_0 < O_1) & hammer
 
-    Last_2_Negetives = (O_1 > C_1) & (O_2 > C_2)
+    if REJECT_LAST_2_NEGETIVES:
+      Last_2_Negetives = (O_1 > C_1) & (O_2 > C_2)
 
     strCandle=''
     candle_score=0
@@ -262,7 +263,7 @@ def runValidations(current, return_data):
     print("KLINE_LOG: STOP Last 2 Negetives Pattern Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False
-    
+
   return True
 
 
