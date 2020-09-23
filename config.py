@@ -52,7 +52,7 @@ config = {
             "Piercing_Line_bullish": False,
             "Hanging_Man_bearish": True,
             "Hanging_Man_bullish": False,
-            "": True,
+            "Unidentified": True,
             "Last_2_Negetives":True
         }
     },

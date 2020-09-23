@@ -262,7 +262,8 @@ def runValidations(current, return_data):
     print("KLINE_LOG: STOP Last 2 Negetives Pattern Detected!!", return_data)
     time.sleep(INVALID_CANDLE_SLEEP)
     return False
-  
+    
+  return True
 
 
 
