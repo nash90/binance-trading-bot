@@ -32,6 +32,11 @@ class Order(Base):
   all_prices = Column('all_prices', String(200), default="")
   fills = Column('fills', String(500), default="")
   logs = Column('logs', String(2000), default="")
+  candle_pattern0 = Column('candle_pattern0', String(500), default="")
+  candle_pattern1 = Column('candle_pattern1', String(500), default="")
+  candle_pattern2 = Column('candle_pattern2', String(500), default="")
+  candle_pattern3 = Column('candle_pattern3', String(500), default="")
+  candle_pattern4 = Column('candle_pattern4', String(500), default="")
 
 class DailyConfig(Base):
   __tablename__ = 'daily_config'

@@ -251,6 +251,11 @@ def createFreshOrder(exchange, current_price, latest_candels):
         price_mb = float(fills[0]["price"])
         price_mb = round(price_mb, 2)
 
+    candle_pattern0 = latest_candels[0].get("candle_pattern")
+    candle_pattern1 = latest_candels[1].get("candle_pattern")
+    candle_pattern2 = latest_candels[2].get("candle_pattern")
+    candle_pattern3 = latest_candels[3].get("candle_pattern")
+    candle_pattern4 = latest_candels[4].get("candle_pattern")
     db_order = Order(
         symbol = new_order.get("symbol"),
         order_id = new_order.get("orderId"),
@@ -264,7 +269,12 @@ def createFreshOrder(exchange, current_price, latest_candels):
         bought_flag=True,
         fills = json.dumps(fills)[:499],
         created_date = datetime.now(),
-        logs = json.dumps(latest_candels)[:2000]
+        logs = json.dumps(latest_candels)[:2000],
+        candle_pattern0 = candle_pattern0,
+        candle_pattern1 = candle_pattern1,
+        candle_pattern2 = candle_pattern2,
+        candle_pattern3 = candle_pattern3,
+        candle_pattern4 = candle_pattern4
     )
 
     addDataToDB(db_order)
@@ -296,7 +306,7 @@ def start():
             [validated, latest_candels] = permitCandleStick()
         
         if validated:
-            createFreshOrder(exchange, current_price, latest_candels)
+            pass #createFreshOrder(exchange, current_price, latest_candels)
 
     else:
         print("LOG: An Asset to Sell is Found", current_price, order.id)
