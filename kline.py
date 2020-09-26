@@ -314,11 +314,12 @@ def permitCandleStick():
 
   #return_data = latest_signals[LOG_ELEMENTS]
   log_elements = latest_signals[LOG_ELEMENTS]
+  log_elements = log_elements.to_dict('records')
   return_data = latest_signals.to_dict('records')
 
   if runValidations(current, log_elements) == False:
     return [False, return_data]
-    
+
   return_data = saveCandles(return_data)
   pattern = return_data[0]["candle_pattern"] if return_data[0]["candle_pattern"] != "" else "N/A"
   
