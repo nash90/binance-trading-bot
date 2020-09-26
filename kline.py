@@ -8,7 +8,12 @@ from binance.client import Client
 from binance.enums import *
 from datetime import datetime
 
+from base import Session
 from config import config
+from models import Candle
+from dbutility import addDataToDB
+
+session = Session()
 
 api_key = config["api_key"]
 api_secret = config["api_secret"]
@@ -179,11 +184,16 @@ def getCandleAndClassify(symbol = symbol, interval = KLINE_INTERVAL_5MINUTE):
   df['signal']=np.where(df['candle_cumsum']>1,1,-1)
   df['signal2']=np.where(df['signal']==df['signal'].shift(1),0,df['signal']) 
   df['Open_time'] = (df['Open_time'].astype(int))/1000
+  df['Close_Time'] = (df['Close_Time'].astype(int))/1000
   #print(df["Open_time"])
   df['Open_time'] = pd.to_datetime(df['Open_time'],unit="s")
+  df['Close_Time'] = pd.to_datetime(df['Close_Time'],unit="s")
   jst = pytz.timezone('Asia/Tokyo')
   df['Open_time'] = df['Open_time'].dt.tz_localize(pytz.utc).dt.tz_convert(jst)
+  df['Close_Time'] = df['Close_Time'].dt.tz_localize(pytz.utc).dt.tz_convert(jst)
+  
   df['Open_time_str'] = df['Open_time'].apply(lambda x: x.strftime(DATETIME_FORMAT))
+  df['Close_Time_str'] = df['Close_Time'].apply(lambda x: x.strftime(DATETIME_FORMAT))
   #print(df["Open_time"])
 
   return df
@@ -266,6 +276,35 @@ def runValidations(current, return_data):
   return True
 
 
+def saveCandles(return_data):
+  for item in return_data:
+    new = Candle(
+      Open_time_str = item.get("Open_time_str"),
+      Open = item.get("Open"),
+      High = item.get("High"),
+      Low = item.get("Low"),
+      Close = item.get("Close"),
+      Volume = item.get("Volume"),
+      Close_Time_str = item.get("Close_Time_str"),
+      Quote_Asset_Volume = item.get("Quote_Asset_Volume"),
+      Number_Of_Trades = item.get("Number_Of_Trades"),
+      Taker_Buy_Base_Asset_Volume = item.get("Taker_Buy_Base_Asset_Volume"),
+      Taker_Buy_Quote_Asset_Volume = item.get("Taker_Buy_Quote_Asset_Volume"),
+      Ignore = item.get("Ignore"),
+      candle_pattern = item.get("candle_pattern"),
+      candle_score = item.get("candle_score"),
+      candle_cumsum = item.get("candle_cumsum"),
+      signal = item.get("signal"),
+      signal2 = item.get("signal2")
+    )
+
+    addDataToDB(session, new)
+    item["id"] = new.id
+
+  return return_data
+
+
+
 
 def permitCandleStick():
   df = getCandleAndClassify()
@@ -273,8 +312,10 @@ def permitCandleStick():
   latest_signals = df.nlargest(5,"Open_time")
   current = latest_signals.iloc[0]
 
-  return_data = latest_signals[LOG_ELEMENTS]
-  return_data = return_data.to_dict('records')
+  #return_data = latest_signals[LOG_ELEMENTS]
+  return_data = latest_signals.to_dict('records')
+
+  return_data = saveCandles(return_data)
 
   if runValidations(current, return_data) == False:
     return [False, return_data]

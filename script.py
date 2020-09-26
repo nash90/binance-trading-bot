@@ -250,6 +250,11 @@ def createFreshOrder(exchange, current_price, latest_candels):
     if len(fills) > 0:
         price_mb = float(fills[0]["price"])
         price_mb = round(price_mb, 2)
+    candle0 = latest_candels[0].get("id")
+    candle1 = latest_candels[1].get("id")
+    candle2 = latest_candels[2].get("id")
+    candle3 = latest_candels[3].get("id")
+    candle4 = latest_candels[4].get("id")
 
     candle_pattern0 = latest_candels[0].get("candle_pattern")
     candle_pattern1 = latest_candels[1].get("candle_pattern")

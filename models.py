@@ -37,6 +37,11 @@ class Order(Base):
   candle_pattern2 = Column('candle_pattern2', String(500), default="")
   candle_pattern3 = Column('candle_pattern3', String(500), default="")
   candle_pattern4 = Column('candle_pattern4', String(500), default="")
+  candle0 = Column('candle0', BigInteger)
+  candle1 = Column('candle0', BigInteger)
+  candle2 = Column('candle0', BigInteger)
+  candle3 = Column('candle0', BigInteger)
+  candle4 = Column('candle0', BigInteger)
 
 class DailyConfig(Base):
   __tablename__ = 'daily_config'
@@ -51,3 +56,29 @@ class DailyConfig(Base):
   daily_profit_stopped_value = Column('daily_profit_stopped_value', Numeric)
   bot_status = Column('bot_status', String(50))
   bot_log = Column('bot_log', String(50))
+
+class Candle(Base):
+  __tablename__ = 'market_candle'
+  __table_args__ = {'extend_existing': True}
+  id = Column('id', BigInteger, primary_key=True)
+  Open_time_str = Column('Open_time_str', Date)
+  Open = Column('Open', Numeric)
+  High = Column('High', Numeric)
+  Low = Column('Low', Numeric)
+  Close = Column('Close', Numeric)
+  Volume = Column('Volume', Numeric)
+  Close_Time_str = Column('Close_Time_str', Date)
+  Quote_Asset_Volume = Column('Quote_Asset_Volume', Numeric)
+  Number_Of_Trades = Column('Number_Of_Trades', Numeric)
+  Taker_Buy_Base_Asset_Volume = Column('Taker_Buy_Base_Asset_Volume', Numeric)
+  Taker_Buy_Quote_Asset_Volume = Column('Taker_Buy_Quote_Asset_Volume', Numeric)
+  Ignore = Column('Ignore', Numeric)
+  candle_pattern = Column('candle_pattern', String(500), default="")
+  candle_score = Column('candle_score', Numeric)
+  candle_cumsum = Column('candle_cumsum', Numeric)
+  signal = Column('signal', Numeric)
+  signal2 = Column('signal2', Numeric)
+
+
+
+
