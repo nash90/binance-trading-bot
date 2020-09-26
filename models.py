@@ -38,10 +38,10 @@ class Order(Base):
   candle_pattern3 = Column('candle_pattern3', String(500), default="")
   candle_pattern4 = Column('candle_pattern4', String(500), default="")
   candle0 = Column('candle0', BigInteger)
-  candle1 = Column('candle0', BigInteger)
-  candle2 = Column('candle0', BigInteger)
-  candle3 = Column('candle0', BigInteger)
-  candle4 = Column('candle0', BigInteger)
+  candle1 = Column('candle1', BigInteger)
+  candle2 = Column('candle2', BigInteger)
+  candle3 = Column('candle3', BigInteger)
+  candle4 = Column('candle4', BigInteger)
 
 class DailyConfig(Base):
   __tablename__ = 'daily_config'
