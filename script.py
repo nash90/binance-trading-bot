@@ -274,12 +274,17 @@ def createFreshOrder(exchange, current_price, latest_candels):
         bought_flag=True,
         fills = json.dumps(fills)[:499],
         created_date = datetime.now(),
-        logs = json.dumps(latest_candels)[:2000],
+        #logs = json.dumps(latest_candels)[:2000],
         candle_pattern0 = candle_pattern0,
         candle_pattern1 = candle_pattern1,
         candle_pattern2 = candle_pattern2,
         candle_pattern3 = candle_pattern3,
-        candle_pattern4 = candle_pattern4
+        candle_pattern4 = candle_pattern4,
+        candle0 = candle0,
+        candle1 = candle1,
+        candle2 = candle2,
+        candle3 = candle3,
+        candle4 = candle4
     )
 
     addDataToDB(db_order)
