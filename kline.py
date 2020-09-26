@@ -313,14 +313,15 @@ def permitCandleStick():
   current = latest_signals.iloc[0]
 
   #return_data = latest_signals[LOG_ELEMENTS]
+  log_elements = latest_signals[LOG_ELEMENTS]
   return_data = latest_signals.to_dict('records')
 
-  return_data = saveCandles(return_data)
-
-  if runValidations(current, return_data) == False:
+  if runValidations(current, log_elements) == False:
     return [False, return_data]
+    
+  return_data = saveCandles(return_data)
   pattern = return_data[0]["candle_pattern"] if return_data[0]["candle_pattern"] != "" else "N/A"
-  log_elements = latest_signals[LOG_ELEMENTS]
+  
   print("KLINE_LOG: latest_signals[LOG_ELEMENTS]", pattern,log_elements.to_dict('records'))
 
   return [True, return_data]
