@@ -320,7 +320,7 @@ def permitCandleStick():
   if runValidations(current, return_data) == False:
     return [False, return_data]
   pattern = return_data[0]["candle_pattern"] if return_data[0]["candle_pattern"] != "" else "N/A"
-  print("KLINE_LOG: latest_signals[LOG_ELEMENTS]", pattern,return_data)
+  print("KLINE_LOG: latest_signals[LOG_ELEMENTS]", pattern,latest_signals[LOG_ELEMENTS].to_dict('records'))
 
   return [True, return_data]
 
