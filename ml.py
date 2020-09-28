@@ -22,6 +22,9 @@ from utility import createNumericCandleDict
 from utility import createCategoricCandleList
 from encoder import MultiColumnLabelEncoder
 import joblib
+from configs.ml_config import ml_config
+from utility import saveObject
+from utility import loadObject
 
 session = Session()
 
@@ -175,17 +178,6 @@ def DT(X_train, y_train):
   # Train Decision Tree Classifer
   clf = clf.fit(X_train,y_train)
   return clf
-
-def saveObject(obj, obj_file):
-  with open(obj_file, 'wb') as f:
-    joblib.dump(obj, f, compress=9)
-
-
-def loadObject(obj_file):
-  with open(obj_file, 'rb') as f:
-    obj = joblib.load(f)
-
-  return obj
 
 
 def getTestData():

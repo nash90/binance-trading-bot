@@ -3,6 +3,7 @@ import time
 import logging
 import json
 import requests
+import pandas as pd
 
 from binance.client import Client
 from binance.enums import *
@@ -15,6 +16,9 @@ from base import Session
 from models import Order
 from helpers import checkBotPermit
 from kline import permitCandleStick
+from configs.ml_config import ml_config
+from utility import loadObject
+from utility import createNumericCandleDictFromDict
 
 
 api_key = config["api_key"]
@@ -309,13 +313,39 @@ def start():
     ###################
 
     if order == None:
-        print("LOG: Try to Create New Fresh Order for Target: ", current_price)
+        print("LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
         validated = True
         latest_candels = []
         if config.get("bot_permit").get("validate_candlestick") == True:
             [validated, latest_candels] = permitCandleStick()
+            if ml_config.get("enable_ml_trade") == True:
+                ml_file = ml_config.get("model_file")
+                scale_file = ml_config.get("scale_file")
+                model = loadObject(ml_file)
+                scaler = loadObject(scale_file)
+
+                print("LOG: ML model Loaded", model)
+                arranged_candel_data = createNumericCandleDictFromDict(
+                  c0=latest_candels[0],
+                  c1=latest_candels[1], 
+                  c2=latest_candels[2], 
+                  c3=latest_candels[3], 
+                  c4=latest_candels[4],   
+                )
+                print("LOG: Candle Data arranged before ML check", arranged_candel_data)
+                df = pd.DataFrame([arranged_candel_data])
+                print("LOG: Data Frame of arranged Candle Data", df)
+                scaled_data = scaler.transform(df)
+                probab = model.predict_proba(scaled_data)
+                profitable_probablity = probab[0][1]
+                if profitable_probablity > 0.999:
+                    validated = True 
+                else:
+                    print("LOG: Simple Candle Validation Passed but ML Validation Failed")
+                    validated = False
         
         if validated:
+            print("LOG: ALL Candle Validation Passed!!")
             createFreshOrder(exchange, current_price, latest_candels)
 
     else:
