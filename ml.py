@@ -8,6 +8,7 @@ from sklearn import preprocessing
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import GridSearchCV
 
 
 from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
@@ -20,6 +21,7 @@ from base import Session
 from utility import createNumericCandleDict
 from utility import createCategoricCandleList
 from encoder import MultiColumnLabelEncoder
+import joblib
 
 session = Session()
 
@@ -34,9 +36,18 @@ X_CAT_VARIABLES = ["candle_pattern0", "candle_pattern1", "candle_pattern2", "can
 Y_VARIABLE = ["profit_flag"]
 DATA_PARTITION = 0.20
 
-MAX_ITER = 2000
-HIDDEN_LAYER = (20, 20, 20)
+MAX_ITER = 10000
+HIDDEN_LAYER = (50, 50, 50)
+MODEL_FILE = 'mlp_model.txt'
+SCALE_FILE = 'mlp_scale.txt'
 
+PARAM_MLP = {
+    'hidden_layer_sizes': [(50,50,50), (50,100,50), (100,)],
+    'activation': ['tanh', 'relu'],
+    'solver': ['sgd', 'adam'],
+    'alpha': [0.0001, 0.05],
+    'learning_rate': ['constant','adaptive'],
+}
 
 def getNumericData():
   #data = session.query(Order).filter(Order.candle0.isnot(None)).all()
@@ -90,6 +101,8 @@ def dataProcessingForNumericClassifier(ml_data):
   scaler = StandardScaler()
   scaler.fit(X_train)
 
+  saveObject(scaler, SCALE_FILE)
+
   X_train = scaler.transform(X_train)
   X_test = scaler.transform(X_test)
 
@@ -142,9 +155,18 @@ def dataProcessingForDT(ml_data):
 def mlpClassifier(X_train, y_train):
   
   mlp = MLPClassifier(hidden_layer_sizes=HIDDEN_LAYER, max_iter=MAX_ITER)
+  #mlp = MLPClassifier(hidden_layer_sizes=(20,20,), max_iter=100000, alpha=1e-4,
+  #                    solver='adam', verbose=0, tol=1e-8, random_state=1,
+  #                    learning_rate_init=.01)
   mlp.fit(X_train, y_train.values.ravel())
 
   return mlp
+
+def bestMLPClassifier(X_train, y_train):
+  mlp = MLPClassifier(max_iter=MAX_ITER)
+  clf = GridSearchCV(mlp, PARAM_MLP)
+  clf.fit(X_train, y_train.values.ravel())
+  return clf
 
 
 def DT(X_train, y_train):
@@ -154,8 +176,19 @@ def DT(X_train, y_train):
   clf = clf.fit(X_train,y_train)
   return clf
 
+def saveObject(obj, obj_file):
+  with open(obj_file, 'wb') as f:
+    joblib.dump(obj, f, compress=9)
 
-def initNumericML():
+
+def loadObject(obj_file):
+  with open(obj_file, 'rb') as f:
+    obj = joblib.load(f)
+
+  return obj
+
+
+def getTestData():
   db_data = getNumericData()
 
   formatted_data = arrangeNumericData(db_data)
@@ -164,12 +197,32 @@ def initNumericML():
 
   [X_train, X_test, y_train, y_test] = dataProcessingForNumericClassifier(ml_data)
 
-  model = mlpClassifier(X_train, y_train)
+  return [X_train, X_test, y_train, y_test]
+
+
+def initNumericML(findBest = False):
+  db_data = getNumericData()
+
+  formatted_data = arrangeNumericData(db_data)
+
+  ml_data = pd.DataFrame(formatted_data)
+
+  [X_train, X_test, y_train, y_test] = dataProcessingForNumericClassifier(ml_data)
+
+  if findBest == True:
+    print("ML_LOG: Find best MLP")
+    model = bestMLPClassifier(X_train, y_train)
+  else:
+    model = mlpClassifier(X_train, y_train)
 
   predictions = model.predict(X_test)
 
   print(confusion_matrix(y_test,predictions))
   print(classification_report(y_test,predictions))
+
+  saveObject(model, MODEL_FILE)
+
+  return model
 
 
 def initCategoricML():
