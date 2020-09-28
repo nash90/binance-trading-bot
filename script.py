@@ -37,6 +37,7 @@ BOT_FREQUENCY = config.get("bot_freqency")
 PROFIT_SLEEP = config.get("profit_sleep")
 LOSS_SLEEP = config.get("loss_sleep")
 ERROR_SLEEP = config.get("error_sleep")
+MIN_PROFIT_PROBA = ml_config.get("min_profitable_probablity")
 
 session = Session()
 # APP constants
@@ -334,14 +335,15 @@ def start():
                 )
                 print("LOG: Candle Data arranged before ML check", arranged_candel_data)
                 df = pd.DataFrame([arranged_candel_data])
-                print("LOG: Data Frame of arranged Candle Data", df)
+                #print("LOG: Data Frame of arranged Candle Data", df)
                 scaled_data = scaler.transform(df)
                 probab = model.predict_proba(scaled_data)
+                print("LOG: Profitability Predictions", probab)
                 profitable_probablity = probab[0][1]
-                if profitable_probablity > 0.999:
+                if profitable_probablity > MIN_PROFIT_PROBA:
                     validated = True 
                 else:
-                    print("LOG: Simple Candle Validation Passed but ML Validation Failed")
+                    print("LOG: Simple Candle Validation Passed but ML Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
                     validated = False
         
         if validated:
