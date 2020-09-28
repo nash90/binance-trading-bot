@@ -319,7 +319,7 @@ def start():
         latest_candels = []
         if config.get("bot_permit").get("validate_candlestick") == True:
             [validated, latest_candels] = permitCandleStick()
-            if ml_config.get("enable_ml_trade") == True:
+            if validated == True and ml_config.get("enable_ml_trade") == True:
                 ml_file = ml_config.get("model_file")
                 scale_file = ml_config.get("scale_file")
                 model = loadObject(ml_file)
