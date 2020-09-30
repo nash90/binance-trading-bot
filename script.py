@@ -235,6 +235,7 @@ def executeStopLoss(exchange, quantity, order, prices):
     order.market_sell_txn_id = sold.get("orderId")
     order.sold_flag = True
     order.all_prices = json.dumps(prices)
+    order.sold_cummulative_quote_qty = sold.get("cummulativeQuoteQty")
 
     price_ms = round(float(sold.get("price")), 2)
     fills = sold.get("fills")
@@ -279,6 +280,7 @@ def createFreshOrder(exchange, current_price, latest_candels):
         bought_flag=True,
         fills = json.dumps(fills)[:499],
         created_date = datetime.now(),
+        buy_cummulative_quote_qty = new_order.get("cummulativeQuoteQty"),
         #logs = json.dumps(latest_candels)[:2000],
         candle_pattern0 = candle_pattern0,
         candle_pattern1 = candle_pattern1,

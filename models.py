@@ -21,6 +21,8 @@ class Order(Base):
   stop_limit_price = Column('stop_limit_price', Numeric)
   executed_quantity = Column('executed_quantity', Numeric)
   orig_quantity = Column('orig_quantity', Numeric)
+  buy_cummulative_quote_qty = Column('buy_cummulative_quote_qty', Numeric)
+  sold_cummulative_quote_qty = Column('sold_cummulative_quote_qty', Numeric)
   total = Column('total', Numeric)
   profit_sale_txn_id = Column('profit_sale_txn_id', String(50), default="")
   profit_sale_stop_loss_price = Column('profit_sale_stop_loss_price', Numeric)
