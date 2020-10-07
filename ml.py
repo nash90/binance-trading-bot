@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy.orm import aliased
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -60,14 +61,20 @@ def getNumericData():
   c3 = aliased(Candle)
   c4 = aliased(Candle)
 
+  #filter_case = Order.candle0.isnot(None)
+
   data = session.query(Order, c0, c1, c2, c3, c4).join(
     c0, c0.id == Order.candle0).join(
     c1, c1.id == Order.candle1).join(
     c2, c2.id == Order.candle2).join(
     c3, c3.id == Order.candle3).join(
     c4, c4.id == Order.candle4).filter(
-    Order.candle0.isnot(None)).all()
-
+      #Order.candle0.isnot(None)
+      Order.created_date >= datetime(2020, 10, 1)
+    ).filter(
+      Order.sold_cummulative_quote_qty.isnot(None)
+    ).all()
+  print(len(data))
   return data
 
 

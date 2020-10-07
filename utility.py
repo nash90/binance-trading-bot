@@ -52,6 +52,7 @@ def createNumericCandleDict(order, c0, c1, c2, c3, c4):
     new_dict["c4_Taker_Buy_Base_Asset_Volume"] = c4.Taker_Buy_Base_Asset_Volume
     new_dict["c4_Taker_Buy_Quote_Asset_Volume"] = c4.Taker_Buy_Quote_Asset_Volume 
 
+    """
     if order != None:
       marker_sell_price = order.marker_sell_price
       price = order.price
@@ -59,6 +60,15 @@ def createNumericCandleDict(order, c0, c1, c2, c3, c4):
       new_dict["profit"] = profit
       profit_flag = 1 if profit > 0 else 0
       new_dict["profit_flag"] = profit_flag
+    """
+    if order != None:
+      net_sold = float(order.sold_cummulative_quote_qty) * 0.9995
+      net_buy = float(order.buy_cummulative_quote_qty) * 1.0005
+      profit = (net_sold - net_buy)/ net_buy
+      new_dict["profit"] = profit
+      profit_flag = 1 if profit > 0 else 0
+      new_dict["profit_flag"] = profit_flag
+
     return new_dict
 
 
