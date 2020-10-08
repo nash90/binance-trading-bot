@@ -431,7 +431,7 @@ def runBatch():
 
         try:
             start()
-        except requests.exceptions.ConnectionError as e:
+        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
             print("Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
             time.sleep(ERROR_SLEEP)
 
