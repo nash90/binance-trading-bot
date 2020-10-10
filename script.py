@@ -38,6 +38,9 @@ PROFIT_SLEEP = config.get("profit_sleep")
 LOSS_SLEEP = config.get("loss_sleep")
 ERROR_SLEEP = config.get("error_sleep")
 MIN_PROFIT_PROBA = ml_config.get("min_profitable_probablity")
+MAX_LOSS_PROBA = ml_config.get("max_loss_probablity")
+CHECK_PROFITABLE_PREDICTION = ml_config.get("check_profitable_prediction")
+CHECK_LOSS_PREDICTION = ml_config.get("check_loss_prediction")
 
 session = Session()
 # APP constants
@@ -341,12 +344,21 @@ def start():
                 scaled_data = scaler.transform(df)
                 probab = model.predict_proba(scaled_data)
                 print("LOG: Profitability Predictions", probab)
-                profitable_probablity = probab[0][1]
-                if profitable_probablity > MIN_PROFIT_PROBA:
-                    validated = True 
-                else:
-                    print("LOG: Simple Candle Validation Passed but ML Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
-                    validated = False
+                if CHECK_PROFITABLE_PREDICTION:
+                    profitable_probablity = probab[0][1]
+                    if profitable_probablity > MIN_PROFIT_PROBA:
+                        validated = True 
+                    else:
+                        print("LOG: Simple Candle Validation Passed but PROFIT Prediction Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
+                        validated = False
+                if CHECK_LOSS_PREDICTION:
+                    loss_probablity = probab[0][0]
+                    if loss_probablity > MAX_LOSS_PROBA:
+                        validated = False
+                        print("LOG: Simple Candle Validation Passed but LOSS Prediction Validation Failed", MAX_LOSS_PROBA, loss_probablity)
+                    else:
+                        validated = True
+
         
         if validated:
             print("LOG: ALL Candle Validation Passed!!")
