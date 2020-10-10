@@ -82,5 +82,48 @@ class Candle(Base):
   signal2 = Column('signal2', Numeric)
 
 
+class Market_Arbi(Base):
+  __tablename__ = 'market_arbi'
+  __table_args__ = {'extend_existing': True}
+  id = Column('id', BigInteger, primary_key=True)
+  market_time = Column('market_time', DateTime)
+  ab_symbol = Column('ab_symbol', String(50))
+  bc_symbol = Column('bc_symbol', String(50))
+  ca_symbol = Column('ca_symbol', String(50))
+  ab_rate = Column('ab_rate', Numeric)
+  bc_rate = Column('bc_rate', Numeric)
+  ca_rate = Column('ca_rate', Numeric)
+  start_a = Column('start_a', Numeric)
+  to_b = Column('to_b', Numeric)
+  to_c = Column('to_c', Numeric)
+  to_a = Column('to_a', Numeric)
+  cut_cost1 = Column('cut_cost1', Numeric)
+  cut_cost2 = Column('cut_cost2', Numeric)
+  cut_cost3 = Column('cut_cost3', Numeric)
+  total_cost = Column('total_cost', Numeric)
+  net_to_a = Column('net_to_a', Numeric)
+  profit_rate = Column('profit_rate', Numeric)
+  net_profit_rate = Column('net_profit_rate', Numeric)
+  market_log = Column('market_log', String(500), default="")
 
 
+class Trade_Arbi(Base):
+  __tablename__ = 'trade_arbi'
+  __table_args__ = {'extend_existing': True}
+  id = Column('id', BigInteger, primary_key=True)
+  market_time = Column('market_time', DateTime)
+  ab_symbol = Column('ab_symbol', String(50))
+  bc_symbol = Column('bc_symbol', String(50))
+  ca_symbol = Column('ca_symbol', String(50))
+  ab_rate = Column('ab_rate', Numeric)
+  bc_rate = Column('bc_rate', Numeric)
+  ca_rate = Column('ca_rate', Numeric)
+  real_rate_ab = Column('real_rate_ab', Numeric)
+  real_rate_bc = Column('real_rate_bc', Numeric)
+  real_rate_ca = Column('real_rate_ca', Numeric)    
+  real_quantity_a = Column('real_quantity_a', Numeric)
+  real_quantity_b = Column('real_quantity_b', Numeric)
+  real_quantity_c = Column('real_quantity_c', Numeric)
+  returned_quantity = Column('returned_quantity', Numeric)
+  predicted_profit_rate = Column('predicted_profit_rate', Numeric)
+  trade_log = Column('trade_log', String(500), default="")

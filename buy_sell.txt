@@ -1,0 +1,87 @@
+{
+   "symbol":"BTCUSDT",
+   "quantity":0.008822
+}
+"LOG":"Market Buy Asset"
+{
+   "symbol":"BTCUSDT",
+   "orderId":3347191082,
+   "orderListId":-1,
+   "clientOrderId":"NVuaznhuHrGefhYWWZP5dX",
+   "transactTime":1602338939398,
+   "price":"0.00000000",
+   "origQty":"0.00882200",
+   "executedQty":"0.00882200",
+   "cummulativeQuoteQty":"99.99675246",
+   "status":"FILLED",
+   "timeInForce":"GTC",
+   "type":"MARKET",
+   "side":"BUY",
+   "fills":[
+      {
+         "price":"11334.93000000",
+         "qty":"0.00882200",
+         "commission":"0.00261834",
+         "commissionAsset":"BNB",
+         "tradeId":431732932
+      }
+   ]
+}
+{
+   "symbol":"ETHBTC",
+   "quantity":0.268
+}
+
+"LOG":"Market Buy Asset"{
+   "symbol":"ETHBTC",
+   "orderId":969502997,
+   "orderListId":-1,
+   "clientOrderId":"QFMpRcURZJruOtaI9uTh80",
+   "transactTime":1602338939456,
+   "price":"0.00000000",
+   "origQty":"0.26800000",
+   "executedQty":"0.26800000",
+   "cummulativeQuoteQty":"0.00882282",
+   "status":"FILLED",
+   "timeInForce":"GTC",
+   "type":"MARKET",
+   "side":"BUY",
+   "fills":[
+      {
+         "price":"0.03292100",
+         "qty":"0.26800000",
+         "commission":"0.00262029",
+         "commissionAsset":"BNB",
+         "tradeId":196991826
+      }
+   ]
+}
+{
+   "symbol":"ETHUSDT",
+   "quantity":0.268
+}
+"LOG":"Market Sell Asset"
+{
+   "symbol":"ETHUSDT",
+   "orderId":1852624735,
+   "orderListId":-1,
+   "clientOrderId":"W5t3qCMptQEwR8JefAPraq",
+   "transactTime":1602338939512,
+   "price":"0.00000000",
+   "origQty":"0.26800000",
+   "executedQty":"0.26800000",
+   "cummulativeQuoteQty":"100.00152000",
+   "status":"FILLED",
+   "timeInForce":"GTC",
+   "type":"MARKET",
+   "side":"SELL",
+   "fills":[
+      {
+         "price":"373.14000000",
+         "qty":"0.26800000",
+         "commission":"0.00261719",
+         "commissionAsset":"BNB",
+         "tradeId":195193328
+      }
+   ]
+}
