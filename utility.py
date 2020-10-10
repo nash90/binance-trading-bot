@@ -80,9 +80,18 @@ def createCategoricCandleList(item):
     new_dict["candle_pattern3"] = item.candle_pattern3
     new_dict["candle_pattern4"] = item.candle_pattern4
 
+    """
     marker_sell_price = item.marker_sell_price
     price = item.price
     profit = (marker_sell_price - price)/price
+    new_dict["profit"] = profit
+    profit_flag = 1 if profit > 0 else 0
+    new_dict["profit_flag"] = profit_flag
+    """
+
+    net_sold = float(item.sold_cummulative_quote_qty) * 0.9995
+    net_buy = float(item.buy_cummulative_quote_qty) * 1.0005
+    profit = (net_sold - net_buy)/ net_buy
     new_dict["profit"] = profit
     profit_flag = 1 if profit > 0 else 0
     new_dict["profit_flag"] = profit_flag
