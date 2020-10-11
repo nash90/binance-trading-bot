@@ -105,6 +105,7 @@ class Market_Arbi(Base):
   profit_rate = Column('profit_rate', Numeric)
   net_profit_rate = Column('net_profit_rate', Numeric)
   market_log = Column('market_log', String(500), default="")
+  trade_id = Column('trade_id', BigInteger)
 
 
 class Trade_Arbi(Base):

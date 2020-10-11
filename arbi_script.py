@@ -112,7 +112,7 @@ def checkProfitable(rate_set):
   return res
 
 
-def saveMarket(asset_set, rate_set, conversion, costs, profits):
+def saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id):
   session = Session()
   (ab_symbol, bc_symbol, ca_symbol) = asset_set
   (ab_rate, bc_rate, ca_rate) = rate_set
@@ -138,7 +138,8 @@ def saveMarket(asset_set, rate_set, conversion, costs, profits):
     total_cost = total_cost,
     net_to_a = net_to_a,
     profit_rate = profit_rate,
-    net_profit_rate = net_profit_rate
+    net_profit_rate = net_profit_rate,
+    trade_id = trade_id
   )
   addDataToDB(session, record_market_arbi)
   session.close()
@@ -170,7 +171,9 @@ def saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity):
     predicted_profit_rate = net_profit_rate
   )
   addDataToDB(session, record_trade_arbi)
+  trade_id = record_trade_arbi.id
   session.close()
+  return trade_id
 
 
 
@@ -298,9 +301,9 @@ def checkProfitMargin(asset_set, profits, rate_set):
   net_profit = profits[1]
   if net_profit > PROMIT_LIMIT:
     (executed_rates, executed_quantity) = executeTripleTrade(asset_set, rate_set)
-    saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity)
-    return True 
-  return False
+    trade_id = saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity)
+    return (True, trade_id) 
+  return (False, None)
 
 
 def process_asset(asset_set, tickers):
@@ -315,8 +318,8 @@ def process_asset(asset_set, tickers):
   #print(rate_set)
   (conversion, costs, profits) = checkProfitable(rate_set)
   print(asset_set, profits, costs)
-  trade_executed = checkProfitMargin(asset_set, profits, rate_set)
-  saveMarket(asset_set, rate_set, conversion, costs, profits)
+  (trade_executed, trade_id) = checkProfitMargin(asset_set, profits, rate_set)
+  saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id)
   if trade_executed:
     return True
   
