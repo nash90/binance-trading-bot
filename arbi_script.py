@@ -21,6 +21,8 @@ from helpers import checkBotPermit
 from dbutility import addDataToDB 
 from dbutility import createTableIfNotExit
 
+from configs.arbit_config import arbit_config
+
 api_key = config["api_key"]
 api_secret = config["api_secret"]
 client = Client(api_key, api_secret)
@@ -28,10 +30,12 @@ client = Client(api_key, api_secret)
 AB = "BTCUSDT"
 BC = "BTCEUR"
 CA = "EURUSDT"
-CUT_RATE = 0.0005
-PROMIT_LIMIT = 0.05
-INIT_ASSET_AMOUNT = 100
-
+CUT_RATE = arbit_config.get("CUT_RATE")
+PROMIT_LIMIT = arbit_config.get("PROMIT_LIMIT")
+INIT_ASSET_AMOUNT = arbit_config.get("INIT_ASSET_AMOUNT")
+PAUSE_AFTER_TRADE = arbit_config.get("PAUSE_AFTER_TRADE")
+BOT_CYCLE = arbit_config.get("BOT_CYCLE")
+PAUSE_AFTER_ERROR = arbit_config.get("PAUSE_AFTER_ERROR")
 
 def get_all_tikers():
   items = client.get_all_tickers()
@@ -213,45 +217,50 @@ def marketSell(exchange, quantity):
     return order
 
 
+def getFloor(num, places):
+
+  floor = ((math.floor(num * (10 ** places))) / (10 ** places))
+  return floor
+
 def roundAssetAmount(amount=0, symbol=''):
   amount = float(amount)
 
   if symbol == 'ADABNB':
-    return round(amount, 0)
+    return getFloor(amount, 0)
   elif symbol == 'ADAUSDT':
-    return round(amount, 1)
+    return getFloor(amount, 1)
   elif symbol == 'BTCUSDT':
-    return round(amount, 6)
+    return getFloor(amount, 6)
   elif symbol == 'BNBETH':
-    return round(amount, 2) 
+    return getFloor(amount, 2) 
   elif symbol == 'BNBUSDT':
-    return round(amount, 3)
+    return getFloor(amount, 3)
   elif symbol == 'BNBBTC':
-    return round(amount, 2)
+    return getFloor(amount, 2)
   elif symbol == 'BNBEUR':
-    return round(amount, 3)        
+    return getFloor(amount, 3)        
   elif symbol == 'ETHBTC':
-    return round(amount, 3)
+    return getFloor(amount, 3)
   elif symbol == 'ETHUSDT':
-    return round(amount, 5)
+    return getFloor(amount, 5)
   elif symbol == 'EURUSDT':
-    return round(amount, 2)
+    return getFloor(amount, 2)
   elif symbol == 'LINKETH':
-    return round(amount, 2)
+    return getFloor(amount, 2)
   elif symbol == 'LINKUSDT':
-    return round(amount, 2)
+    return getFloor(amount, 2)
   elif symbol == 'LINKBTC':
-    return round(amount, 1)          
+    return getFloor(amount, 1)          
   elif symbol == 'TRXXRP':
-    return round(amount, 1)
+    return getFloor(amount, 1)
   elif symbol == 'TRXUSDT':
-    return round(amount, 1)         
+    return getFloor(amount, 1)         
   elif symbol == 'XRPUSDT':
-    return round(amount, 1)
+    return getFloor(amount, 1)
   elif symbol == 'XRPBNB':
-    return round(amount, 1) 
+    return getFloor(amount, 1) 
 
-  return round(amount, 6)
+  return getFloor(amount, 6)
 
 
 
@@ -268,12 +277,12 @@ def executeTripleTrade(asset_set, rate_set):
 
   #buy_quantity_c = quantityB / price_bc
   #buy_quantity_c = roundAssetAmount(buy_quantity_c, BC)
-  sell_quantity_b = float(quantityB)
+  sell_quantity_b = roundAssetAmount(quantityB, BC)
   order_c = marketSell(BC, sell_quantity_b)
   quantityC = order_c.get("cummulativeQuoteQty")
   rate_bc = getRateFromFills(order_c)
 
-  sell_quantity_c = float(quantityC)
+  sell_quantity_c = roundAssetAmount(quantityC, CA)
   order_a = marketSell(CA, sell_quantity_c)
   returned_quantity = roundAssetAmount(order_a.get("cummulativeQuoteQty"))
   rate_ca = getRateFromFills(order_a)
@@ -309,7 +318,7 @@ def process_asset(asset_set, tickers):
   saveMarket(asset_set, rate_set, conversion, costs, profits)
   if trade_executed:
     return True
-
+  
   return False
 
 
@@ -327,7 +336,7 @@ def main():
   for asset_set in asset_list:
     trade_executed = process_asset(asset_set, book)
     if trade_executed:
-      time.sleep(30)
+      time.sleep(PAUSE_AFTER_TRADE)
       break
 
 
@@ -339,8 +348,8 @@ def runBatch():
       main()
     except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
       print("Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
-      time.sleep(2)
+      time.sleep(PAUSE_AFTER_ERROR)
 
-    time.sleep(1)
+    time.sleep(BOT_CYCLE)
 
 runBatch()
