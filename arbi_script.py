@@ -292,7 +292,7 @@ def executeTripleTrade(asset_set, rate_set):
   rate_ca = getRateFromFills(order_a)
 
   executed_rates = (rate_ab, rate_bc, rate_ca)
-  executed_quantity = (real_quantity_a, quantityB, quantityC, returned_quantity)
+  executed_quantity = (real_quantity_a, sell_quantity_b, sell_quantity_c, returned_quantity)
 
   return (executed_rates, executed_quantity)
 
