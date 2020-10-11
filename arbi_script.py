@@ -273,6 +273,7 @@ def executeTripleTrade(asset_set, rate_set):
   buy_quantity_b = roundAssetAmount(buy_quantity_b, AB)
   order_b = marketBuy(AB, buy_quantity_b)
   quantityB = order_b.get("executedQty")
+  real_quantity_a = order_b.get("cummulativeQuoteQty")
   rate_ab = getRateFromFills(order_b)
 
   #buy_quantity_c = quantityB / price_bc
@@ -288,7 +289,7 @@ def executeTripleTrade(asset_set, rate_set):
   rate_ca = getRateFromFills(order_a)
 
   executed_rates = (rate_ab, rate_bc, rate_ca)
-  executed_quantity = (quantityA, quantityB, quantityC, returned_quantity)
+  executed_quantity = (real_quantity_a, quantityB, quantityC, returned_quantity)
 
   return (executed_rates, executed_quantity)
 
