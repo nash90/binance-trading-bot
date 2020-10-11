@@ -100,7 +100,7 @@ def marketBuy(exchange, quantity):
         symbol=params.get("symbol"),
         quantity=params.get("quantity")
     )
-    print("LOG: Market Buy Asset",order)
+    print(datetime.now(), "LOG: Market Buy Asset",order)
 
     return order    
 
@@ -113,7 +113,7 @@ def sellAsset(exchange, quantity, price):
         timeInForce=TIME_IN_FORCE_GTC,
         quantity=quantity,
         price=price)
-    print("LOG: SOLD Asset", order)
+    print(datetime.now(), "LOG: SOLD Asset", order)
     return order
 
 def marketSell(exchange, quantity):
@@ -128,7 +128,7 @@ def marketSell(exchange, quantity):
         symbol=params.get("symbol"),
         quantity=params.get("quantity")
     )
-    print("LOG: Market Sell Asset",order)
+    print(datetime.now(), "LOG: Market Sell Asset",order)
 
     return order    
 
@@ -319,7 +319,7 @@ def start():
     ###################
 
     if order == None:
-        print("LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
+        print(datetime.now(), "LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
         validated = True
         latest_candels = []
         if config.get("bot_permit").get("validate_candlestick") == True:
@@ -330,7 +330,7 @@ def start():
                 model = loadObject(ml_file)
                 scaler = loadObject(scale_file)
 
-                print("LOG: ML model Loaded", model)
+                print(datetime.now(), "LOG: ML model Loaded", model)
                 arranged_candel_data = createNumericCandleDictFromDict(
                   c0=latest_candels[0],
                   c1=latest_candels[1], 
@@ -338,34 +338,34 @@ def start():
                   c3=latest_candels[3], 
                   c4=latest_candels[4],   
                 )
-                print("LOG: Candle Data arranged before ML check", arranged_candel_data)
+                print(datetime.now(), "LOG: Candle Data arranged before ML check", arranged_candel_data)
                 df = pd.DataFrame([arranged_candel_data])
                 #print("LOG: Data Frame of arranged Candle Data", df)
                 scaled_data = scaler.transform(df)
                 probab = model.predict_proba(scaled_data)
-                print("LOG: Profitability Predictions", probab)
+                print(datetime.now(), "LOG: Profitability Predictions", probab)
                 if CHECK_PROFITABLE_PREDICTION:
                     profitable_probablity = probab[0][1]
                     if profitable_probablity > MIN_PROFIT_PROBA:
                         validated = True 
                     else:
-                        print("LOG: Simple Candle Validation Passed but PROFIT Prediction Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
+                        print(datetime.now(), "LOG: Simple Candle Validation Passed but PROFIT Prediction Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
                         validated = False
                 if CHECK_LOSS_PREDICTION:
                     loss_probablity = probab[0][0]
                     if loss_probablity > MAX_LOSS_PROBA:
                         validated = False
-                        print("LOG: Simple Candle Validation Passed but LOSS Prediction Validation Failed", MAX_LOSS_PROBA, loss_probablity)
+                        print(datetime.now(), "LOG: Simple Candle Validation Passed but LOSS Prediction Validation Failed", MAX_LOSS_PROBA, loss_probablity)
                     else:
                         validated = True
 
         
         if validated:
-            print("LOG: ALL Candle Validation Passed!!")
+            print(datetime.now(), "LOG: ALL Candle Validation Passed!!")
             createFreshOrder(exchange, current_price, latest_candels)
 
     else:
-        print("LOG: An Asset to Sell is Found", current_price, order.id)
+        print(datetime.now(), "LOG: An Asset to Sell is Found", current_price, order.id)
         bought_price = order.price
         quantity = round(order.executed_quantity,6)
         order_id = order.order_id
@@ -377,10 +377,10 @@ def start():
         price_profit_stop_loss = prices.get("stop_limit_profit")
 
         if order.profit_sale_process_flag == False:
-            print("LOG: Not Open Sale Stop loss Order ")
+            print(datetime.now(), "LOG: Not Open Sale Stop loss Order ")
             
             if current_price < price_order_stop_loss:
-                print("LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
+                print(datetime.now(), "LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
                 executeStopLoss(exchange, quantity, order, prices)
                 if STOP_COUNT > 0:
                     run_count += 1
@@ -388,7 +388,7 @@ def start():
                 time.sleep(LOSS_SLEEP)
 
             elif current_price > price_profit_margin:
-                print("LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
+                print(datetime.now(), "LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
                 stop_limit_profit = current_price - (current_price * stop_profit_rate)
                 #profit_sell_stop_limit = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
                 #order.profit_sale_txn_id = profit_sell_stop_limit.get("orderId")
@@ -398,16 +398,16 @@ def start():
                 sessionCommit()
 
             else:
-                print("LOG: Keep Observing Market for Selling Opprtunity", prices) 
+                print(datetime.now(), "LOG: Keep Observing Market for Selling Opprtunity", prices) 
 
         else:
-            print("LOG: Open Sale Stop loss Order Found ", order.id)
+            print(datetime.now(), "LOG: Open Sale Stop loss Order Found ", order.id)
             old_profit_sale_stop_loss_price = order.profit_sale_stop_loss_price
 
             new_profit_sale_stop_loss_price = current_price - (current_price * stop_profit_rate)
 
             if old_profit_sale_stop_loss_price < new_profit_sale_stop_loss_price:
-                print("LOG: More opportunity to Extend open Sale Stop loss Order ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
+                print(datetime.now(), "LOG: More opportunity to Extend open Sale Stop loss Order ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
                 #cancel_order =cancelOrder(exchange, order_id)
                 #order.profit_sale_process_flag = false
                 #order.profit_sale_txn_id = ""
@@ -415,10 +415,10 @@ def start():
                 sessionCommit()
 
             elif current_price < old_profit_sale_stop_loss_price:
-                print("LOG: Current price dropped below present price_profit_stop_loss;  ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
+                print(datetime.now(), "LOG: Current price dropped below present price_profit_stop_loss;  ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
                 #cancel_order =cancelOrder(exchange, order_id)
                 #time.sleep(5)
-                print("LOG: Time to cash out .........")
+                print(datetime.now(), "LOG: Time to cash out .........")
                 executeStopLoss(exchange, quantity, order, prices)
                 checkBotPermit()
                 time.sleep(PROFIT_SLEEP)
@@ -438,13 +438,13 @@ def runBatch():
     while run:
         if run_count > STOP_COUNT:
             run = False
-            print("LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
+            print(datetime.now(), "LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
             break
 
         try:
             start()
         except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
-            print("Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
+            print(datetime.now(), "Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
             time.sleep(ERROR_SLEEP)
 
         time.sleep(BOT_FREQUENCY)
