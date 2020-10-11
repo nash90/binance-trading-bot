@@ -4,6 +4,7 @@ import logging
 import json
 import requests
 import pandas as pd
+import math
 
 from binance.client import Client
 from binance.enums import *
@@ -25,8 +26,8 @@ api_secret = config["api_secret"]
 client = Client(api_key, api_secret)
 
 AB = "BTCUSDT"
-BC = "ETHBTC"
-CA = "ETHUSDT"
+BC = "BTCEUR"
+CA = "EURUSDT"
 CUT_RATE = 0.0005
 PROMIT_LIMIT = 0.05
 INIT_ASSET_AMOUNT = 100
@@ -81,9 +82,9 @@ def checkProfitable(rate_set):
   #print("to_b", to_b)
   cut_cost1 = to_b * (rate_ab) * CUT_RATE
   
-  to_c = float(to_b / rate_bc)
+  to_c = float(to_b * rate_bc)
   #print("to_c", to_c)
-  cut_cost2 = to_c * CUT_RATE * rate_bc * rate_ab 
+  cut_cost2 = to_c * CUT_RATE * rate_ca
   
   to_a = float(to_c * rate_ca)
   #print("to_a", to_a)
@@ -144,7 +145,7 @@ def saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity):
   (profit_rate, net_profit_rate) = profits
   (ab_rate, bc_rate, ca_rate) = rate_set
   (real_rate_ab, real_rate_bc, real_rate_ca) = executed_rates
-  (real_quantity_a, real_quantity_b, real_quantity_c, returned_quantity) = executed_quantity
+  [real_quantity_a, real_quantity_b, real_quantity_c, returned_quantity] = [float(x) for x in executed_quantity]
 
   session = Session()
   record_trade_arbi = Trade_Arbi(
@@ -214,36 +215,42 @@ def marketSell(exchange, quantity):
 
 def roundAssetAmount(amount=0, symbol=''):
   amount = float(amount)
-  if symbol == 'BTCUSDT':
+
+  if symbol == 'ADABNB':
+    return round(amount, 0)
+  elif symbol == 'ADAUSDT':
+    return round(amount, 1)
+  elif symbol == 'BTCUSDT':
     return round(amount, 6)
-  elif symbol == 'ETHBTC':
-    return round(amount, 3)
-  elif symbol == 'ETHUSDT':
-    return round(amount, 5) 
-  elif symbol == 'XRPUSDT':
-    return round(amount, 1)
-  elif symbol == 'TRXXRP':
-    return round(amount, 1)
-  elif symbol == 'TRXUSDT':
-    return round(amount, 1)
   elif symbol == 'BNBETH':
     return round(amount, 2) 
   elif symbol == 'BNBUSDT':
     return round(amount, 3)
   elif symbol == 'BNBBTC':
     return round(amount, 2)
+  elif symbol == 'BNBEUR':
+    return round(amount, 3)        
+  elif symbol == 'ETHBTC':
+    return round(amount, 3)
+  elif symbol == 'ETHUSDT':
+    return round(amount, 5)
+  elif symbol == 'EURUSDT':
+    return round(amount, 2)
   elif symbol == 'LINKETH':
     return round(amount, 2)
   elif symbol == 'LINKUSDT':
-    return round(amount, 2) 
-  elif symbol == 'ADABNB':
-    return round(amount, 0)
-  elif symbol == 'ADAUSDT':
-    return round(amount, 1)
-  elif symbol == 'EURUSDT':
     return round(amount, 2)
-  elif symbol == 'BNBEUR':
-    return round(amount, 3)                      
+  elif symbol == 'LINKBTC':
+    return round(amount, 1)          
+  elif symbol == 'TRXXRP':
+    return round(amount, 1)
+  elif symbol == 'TRXUSDT':
+    return round(amount, 1)         
+  elif symbol == 'XRPUSDT':
+    return round(amount, 1)
+  elif symbol == 'XRPBNB':
+    return round(amount, 1) 
+
   return round(amount, 6)
 
 
@@ -255,19 +262,21 @@ def executeTripleTrade(asset_set, rate_set):
   quantityA = INIT_ASSET_AMOUNT
   buy_quantity_b = quantityA / price_ab
   buy_quantity_b = roundAssetAmount(buy_quantity_b, AB)
-  buy_b = marketBuy(AB, buy_quantity_b)
-  quantityB = roundAssetAmount(buy_b.get("executedQty"))
-  rate_ab = getRateFromFills(buy_b)
+  order_b = marketBuy(AB, buy_quantity_b)
+  quantityB = order_b.get("executedQty")
+  rate_ab = getRateFromFills(order_b)
 
-  buy_quantity_c = quantityB / price_bc
-  buy_quantity_c = roundAssetAmount(buy_quantity_c, BC)
-  buy_c = marketBuy(BC, buy_quantity_c)
-  quantityC = roundAssetAmount(buy_c.get("executedQty"))
-  rate_bc = getRateFromFills(buy_c)
+  #buy_quantity_c = quantityB / price_bc
+  #buy_quantity_c = roundAssetAmount(buy_quantity_c, BC)
+  sell_quantity_b = float(quantityB)
+  order_c = marketSell(BC, sell_quantity_b)
+  quantityC = order_c.get("cummulativeQuoteQty")
+  rate_bc = getRateFromFills(order_c)
 
-  get_a = marketSell(CA, quantityC)
-  returned_quantity = roundAssetAmount(get_a.get("cummulativeQuoteQty"))
-  rate_ca = getRateFromFills(get_a)
+  sell_quantity_c = float(quantityC)
+  order_a = marketSell(CA, sell_quantity_c)
+  returned_quantity = roundAssetAmount(order_a.get("cummulativeQuoteQty"))
+  rate_ca = getRateFromFills(order_a)
 
   executed_rates = (rate_ab, rate_bc, rate_ca)
   executed_quantity = (quantityA, quantityB, quantityC, returned_quantity)
@@ -295,11 +304,12 @@ def process_asset(asset_set, tickers):
     rate_set = (price_ab, price_bc, price_ca)
   #print(rate_set)
   (conversion, costs, profits) = checkProfitable(rate_set)
+  print(asset_set, profits, costs)
   trade_executed = checkProfitMargin(asset_set, profits, rate_set)
+  saveMarket(asset_set, rate_set, conversion, costs, profits)
   if trade_executed:
     return True
-  saveMarket(asset_set, rate_set, conversion, costs, profits)
-  print(asset_set, profits, costs)
+
   return False
 
 
@@ -307,13 +317,10 @@ def process_asset(asset_set, tickers):
 def main():
   asset_list = [
     (AB, BC, CA),
-    ("XRPUSDT", "TRXXRP", "TRXUSDT"),
-    ("ETHUSDT", "BNBETH", "BNBUSDT"),
-    ("BTCUSDT", "BNBBTC", "BNBUSDT"),
-    ("ETHUSDT", "LINKETH", "LINKUSDT"),
-    ("BNBUSDT", "ADABNB", "ADAUSDT"),
-    ("EURUSDT", "BNBEUR", "BNBUSDT"),
-
+    ("XRPUSDT", "XRPBNB", "BNBUSDT"),
+    ("BNBUSDT", "BNBEUR", "EURUSDT"),
+    ("LINKUSDT", "LINKBTC", "BTCUSDT"),
+    ("ADAUSDT", "ADABNB", "BNBUSDT"),
   ]
 
   book = get_all_orderbook()
