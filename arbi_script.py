@@ -198,7 +198,7 @@ def marketBuy(exchange, quantity):
         symbol=params.get("symbol"),
         quantity=params.get("quantity")
     )
-    print("LOG: Market Buy Asset",order)
+    print(datetime.now(), "LOG: Market Buy Asset",order)
 
     return order    
 
@@ -215,7 +215,7 @@ def marketSell(exchange, quantity):
         symbol=params.get("symbol"),
         quantity=params.get("quantity")
     )
-    print("LOG: Market Sell Asset",order)
+    print(datetime.now(), "LOG: Market Sell Asset",order)
 
     return order
 
@@ -317,7 +317,7 @@ def process_asset(asset_set, tickers):
     rate_set = (price_ab, price_bc, price_ca)
   #print(rate_set)
   (conversion, costs, profits) = checkProfitable(rate_set)
-  print(asset_set, profits, costs)
+  print(datetime.now(), asset_set, profits, costs)
   (trade_executed, trade_id) = checkProfitMargin(asset_set, profits, rate_set)
   saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id)
   if trade_executed:
