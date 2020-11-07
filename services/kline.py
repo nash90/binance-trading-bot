@@ -8,10 +8,10 @@ from binance.client import Client
 from binance.enums import *
 from datetime import datetime
 
-from base import Session
-from config import config
-from models import Candle
-from dbutility import addDataToDB
+from models.base import Session
+from configs.config import config
+from models.models import Candle
+from util.dbutility import addDataToDB
 
 session = Session()
 
