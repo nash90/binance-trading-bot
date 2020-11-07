@@ -7,5 +7,5 @@ ml_config = {
   "min_profitable_probablity": 0.999,
   "check_profitable_prediction": False,
   "check_loss_prediction": True,
-  "max_loss_probablity": 0.99
+  "max_loss_probablity": 0.85
 }
