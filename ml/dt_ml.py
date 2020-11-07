@@ -22,19 +22,19 @@ from sklearn import metrics #Import scikit-learn metrics module for accuracy cal
 from sklearn import tree
 from sklearn.tree import export_graphviz
 from six import StringIO 
-from IPython.display import Image  
+#from IPython.display import Image  
 import pydotplus
 
-from models import Candle 
-from models import Order 
-from base import Session
-from utility import createNumericCandleDict
-from utility import createCategoricCandleList
-from encoder import MultiColumnLabelEncoder
+from models.models import Candle 
+from models.models import Order 
+from models.base import Session
+from util.utility import createNumericCandleDict
+from util.utility import createCategoricCandleList
+from util.encoder import MultiColumnLabelEncoder
 import joblib
 from configs.ml_config import ml_config
-from utility import saveObject
-from utility import loadObject
+from util.utility import saveObject
+from util.utility import loadObject
 
 
 
@@ -116,4 +116,4 @@ def drawGraph(clf):
                   special_characters=True,class_names=['0','1'])
   graph = pydotplus.graph_from_dot_data(dot_data.getvalue())  
   graph.write_png('tree.png')
-  Image(graph.create_png())
+  #Image(graph.create_png())

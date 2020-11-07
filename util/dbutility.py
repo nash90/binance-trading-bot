@@ -1,6 +1,6 @@
-from base import Base
-from base import engine
-from base import Session
+from models.base import Base
+from models.base import engine
+from models.base import Session
 
 def sessionCommit(session):
     try:  
