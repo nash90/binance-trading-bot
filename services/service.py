@@ -5,10 +5,10 @@ from datetime import timedelta
 from sqlalchemy.sql import text
 from sqlalchemy import cast, Date
 
-from config import config
-from base import Session
-from models import DailyConfig
-from models import Order
+from configs.config import config
+from models.base import Session
+from models.models import DailyConfig
+from models.models import Order
 
 session = Session()
 

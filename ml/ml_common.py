@@ -16,16 +16,16 @@ from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifie
 from sklearn.model_selection import train_test_split # Import train_test_split function
 from sklearn import metrics #Import scikit-learn metrics module for accuracy calculation
 
-from models import Candle 
-from models import Order 
-from base import Session
-from utility import createNumericCandleDict
-from utility import createCategoricCandleList
-from encoder import MultiColumnLabelEncoder
+from models.models import Candle
+from models.models import Order
+from models.base import Session
+from util.utility import createNumericCandleDict
+from util.utility import createCategoricCandleList
+from util.encoder import MultiColumnLabelEncoder
 import joblib
 from configs.ml_config import ml_config
-from utility import saveObject
-from utility import loadObject
+from util.utility import saveObject
+from util.utility import loadObject
 
 
 C0_NUM_VARIABLES = ["c0_Open", "c0_High", "c0_Low", "c0_Close", "c0_Volume", "c0_Quote_Asset_Volume", "c0_Number_Of_Trades", "c0_Taker_Buy_Base_Asset_Volume", "c0_Taker_Buy_Quote_Asset_Volume" ]

@@ -9,16 +9,16 @@ from binance.client import Client
 from binance.enums import *
 from datetime import datetime
 
-from config import config
-from base import Base
-from base import engine
-from base import Session
-from models import Order
-from helpers import checkBotPermit
-from kline import permitCandleStick
+from configs.config import config
+from models.base import Base
+from models.base import engine
+from models.base import Session
+from models.models import Order
+from services.service import checkBotPermit
+from services.kline import permitCandleStick
 from configs.ml_config import ml_config
-from utility import loadObject
-from utility import createNumericCandleDictFromDict
+from util.utility import loadObject
+from util.utility import createNumericCandleDictFromDict
 
 
 api_key = config["api_key"]
