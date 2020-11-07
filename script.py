@@ -1,17 +1,25 @@
-from config import config
-from binance.client import Client
-from binance.enums import *
-import json
-import requests
-
 import os
 import time
+import logging
+import json
+import requests
+import pandas as pd
+
+from binance.client import Client
+from binance.enums import *
 from datetime import datetime
 
+from config import config
 from base import Base
 from base import engine
 from base import Session
 from models import Order
+from helpers import checkBotPermit
+from kline import permitCandleStick
+from configs.ml_config import ml_config
+from utility import loadObject
+from utility import createNumericCandleDictFromDict
+
 
 api_key = config["api_key"]
 api_secret = config["api_secret"]
@@ -24,13 +32,23 @@ profit_rate = config["profit_rate"]
 stop_profit_rate = config["stop_profit_rate"]
 stop_profit = 0
 run_count = 0
+STOP_COUNT = config.get("stop_script")
 BOT_FREQUENCY = config.get("bot_freqency")
 PROFIT_SLEEP = config.get("profit_sleep")
 LOSS_SLEEP = config.get("loss_sleep")
 ERROR_SLEEP = config.get("error_sleep")
+MIN_PROFIT_PROBA = ml_config.get("min_profitable_probablity")
+MAX_LOSS_PROBA = ml_config.get("max_loss_probablity")
+CHECK_PROFITABLE_PREDICTION = ml_config.get("check_profitable_prediction")
+CHECK_LOSS_PREDICTION = ml_config.get("check_loss_prediction")
 
 session = Session()
 # APP constants
+
+def setDBLogging():
+    logging.basicConfig()
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+
 
 def createTableIfNotExit():
     return Base.metadata.create_all(engine)
@@ -82,7 +100,7 @@ def marketBuy(exchange, quantity):
         symbol=params.get("symbol"),
         quantity=params.get("quantity")
     )
-    print("LOG: Market Buy Asset",order)
+    print(datetime.now(), "LOG: Market Buy Asset",order)
 
     return order    
 
@@ -95,7 +113,7 @@ def sellAsset(exchange, quantity, price):
         timeInForce=TIME_IN_FORCE_GTC,
         quantity=quantity,
         price=price)
-    print("LOG: SOLD Asset", order)
+    print(datetime.now(), "LOG: SOLD Asset", order)
     return order
 
 def marketSell(exchange, quantity):
@@ -110,7 +128,7 @@ def marketSell(exchange, quantity):
         symbol=params.get("symbol"),
         quantity=params.get("quantity")
     )
-    print("LOG: Market Sell Asset",order)
+    print(datetime.now(), "LOG: Market Sell Asset",order)
 
     return order    
 
@@ -216,11 +234,11 @@ buy_size = round(buy_size, 4)
 
 
 def executeStopLoss(exchange, quantity, order, prices):
-    global run_count
     sold = marketSell(exchange, quantity)
     order.market_sell_txn_id = sold.get("orderId")
     order.sold_flag = True
     order.all_prices = json.dumps(prices)
+    order.sold_cummulative_quote_qty = sold.get("cummulativeQuoteQty")
 
     price_ms = round(float(sold.get("price")), 2)
     fills = sold.get("fills")
@@ -229,10 +247,57 @@ def executeStopLoss(exchange, quantity, order, prices):
         price_ms = round(price_ms, 2)
     order.marker_sell_price = price_ms
 
-    sessionCommit()
-    run_count = run_count+ 1
-    time.sleep(150)    
+    sessionCommit()   
 
+
+def createFreshOrder(exchange, current_price, latest_candels):
+    ammount = buy_size / current_price
+    ammount = round(ammount, 6)
+    new_order = marketBuy(exchange, ammount)   
+    price_mb = round(float(new_order.get("price")), 2)
+    fills = new_order.get("fills")
+    if len(fills) > 0:
+        price_mb = float(fills[0]["price"])
+        price_mb = round(price_mb, 2)
+    candle0 = latest_candels[0].get("id")
+    candle1 = latest_candels[1].get("id")
+    candle2 = latest_candels[2].get("id")
+    candle3 = latest_candels[3].get("id")
+    candle4 = latest_candels[4].get("id")
+
+    candle_pattern0 = latest_candels[0].get("candle_pattern")
+    candle_pattern1 = latest_candels[1].get("candle_pattern")
+    candle_pattern2 = latest_candels[2].get("candle_pattern")
+    candle_pattern3 = latest_candels[3].get("candle_pattern")
+    candle_pattern4 = latest_candels[4].get("candle_pattern")
+    db_order = Order(
+        symbol = new_order.get("symbol"),
+        order_id = new_order.get("orderId"),
+        client_order_id = new_order.get("clientOrderId"),
+        side = new_order.get("side"),
+        type=new_order.get("type"),
+        price= price_mb,
+        orig_quantity=round(float(new_order.get("origQty")),6),
+        executed_quantity=round(float(new_order.get("executedQty")),6),
+        server_side_status= new_order.get("status"),
+        bought_flag=True,
+        fills = json.dumps(fills)[:499],
+        created_date = datetime.now(),
+        buy_cummulative_quote_qty = new_order.get("cummulativeQuoteQty"),
+        #logs = json.dumps(latest_candels)[:2000],
+        candle_pattern0 = candle_pattern0,
+        candle_pattern1 = candle_pattern1,
+        candle_pattern2 = candle_pattern2,
+        candle_pattern3 = candle_pattern3,
+        candle_pattern4 = candle_pattern4,
+        candle0 = candle0,
+        candle1 = candle1,
+        candle2 = candle2,
+        candle3 = candle3,
+        candle4 = candle4
+    )
+
+    addDataToDB(db_order)
 
 def start():
     #print("LOG: New Cycle)
@@ -254,35 +319,53 @@ def start():
     ###################
 
     if order == None:
-        print("LOG: Create New Fresh Order for Target: ", current_price)
-        ammount = buy_size / current_price
-        ammount = round(ammount, 6)
-        new_order = marketBuy(exchange, ammount)   
-        price_mb = round(float(new_order.get("price")), 2)
-        fills = new_order.get("fills")
-        if len(fills) > 0:
-            price_mb = float(fills[0]["price"])
-            price_mb = round(price_mb, 2)
+        print(datetime.now(), "LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
+        validated = True
+        latest_candels = []
+        if config.get("bot_permit").get("validate_candlestick") == True:
+            [validated, latest_candels] = permitCandleStick()
+            if validated == True and ml_config.get("enable_ml_trade") == True:
+                ml_file = ml_config.get("model_file")
+                scale_file = ml_config.get("scale_file")
+                model = loadObject(ml_file)
+                scaler = loadObject(scale_file)
 
-        db_order = Order(
-            symbol = new_order.get("symbol"),
-            order_id = new_order.get("orderId"),
-            client_order_id = new_order.get("clientOrderId"),
-            side = new_order.get("side"),
-            type=new_order.get("type"),
-            price= price_mb,
-            orig_quantity=round(float(new_order.get("origQty")),6),
-            executed_quantity=round(float(new_order.get("executedQty")),6),
-            server_side_status= new_order.get("status"),
-            bought_flag=True,
-            fills = json.dumps(fills),
-            created_date = datetime.now()
-        )
+                print(datetime.now(), "LOG: ML model Loaded", model)
+                arranged_candel_data = createNumericCandleDictFromDict(
+                  c0=latest_candels[0],
+                  c1=latest_candels[1], 
+                  c2=latest_candels[2], 
+                  c3=latest_candels[3], 
+                  c4=latest_candels[4],   
+                )
+                print(datetime.now(), "LOG: Candle Data arranged before ML check", arranged_candel_data)
+                df = pd.DataFrame([arranged_candel_data])
+                #print("LOG: Data Frame of arranged Candle Data", df)
+                scaled_data = scaler.transform(df)
+                probab = model.predict_proba(scaled_data)
+                print(datetime.now(), "LOG: Profitability Predictions", probab)
+                if CHECK_PROFITABLE_PREDICTION:
+                    profitable_probablity = probab[0][1]
+                    if profitable_probablity > MIN_PROFIT_PROBA:
+                        validated = True 
+                    else:
+                        print(datetime.now(), "LOG: Simple Candle Validation Passed but PROFIT Prediction Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
+                        validated = False
+                if CHECK_LOSS_PREDICTION:
+                    loss_probablity = probab[0][0]
+                    if loss_probablity > MAX_LOSS_PROBA:
+                        validated = False
+                        print(datetime.now(), "LOG: Simple Candle Validation Passed but LOSS Prediction Validation Failed", MAX_LOSS_PROBA, loss_probablity)
+                    else:
+                        validated = True
 
-        addDataToDB(db_order)
+        
+        if validated:
+            print(datetime.now(), "LOG: ALL Candle Validation Passed!!")
+            createFreshOrder(exchange, current_price, latest_candels)
 
     else:
-        print("LOG: An Asset to Sell is Found", current_price, order.id)
+        print(datetime.now(), "LOG: An Asset to Sell is Found", current_price, order.id)
         bought_price = order.price
         quantity = round(order.executed_quantity,6)
         order_id = order.order_id
@@ -294,15 +377,18 @@ def start():
         price_profit_stop_loss = prices.get("stop_limit_profit")
 
         if order.profit_sale_process_flag == False:
-            print("LOG: Not Open Sale Stop loss Order ")
+            print(datetime.now(), "LOG: Not Open Sale Stop loss Order ")
             
             if current_price < price_order_stop_loss:
-                print("LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
+                print(datetime.now(), "LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
                 executeStopLoss(exchange, quantity, order, prices)
+                if STOP_COUNT > 0:
+                    run_count += 1
+                checkBotPermit()
                 time.sleep(LOSS_SLEEP)
 
             elif current_price > price_profit_margin:
-                print("LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
+                print(datetime.now(), "LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
                 stop_limit_profit = current_price - (current_price * stop_profit_rate)
                 #profit_sell_stop_limit = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
                 #order.profit_sale_txn_id = profit_sell_stop_limit.get("orderId")
@@ -312,16 +398,16 @@ def start():
                 sessionCommit()
 
             else:
-                print("LOG: Keep Observing Market for Selling Opprtunity", prices) 
+                print(datetime.now(), "LOG: Keep Observing Market for Selling Opprtunity", prices) 
 
         else:
-            print("LOG: Open Sale Stop loss Order Found ", order.id)
+            print(datetime.now(), "LOG: Open Sale Stop loss Order Found ", order.id)
             old_profit_sale_stop_loss_price = order.profit_sale_stop_loss_price
 
             new_profit_sale_stop_loss_price = current_price - (current_price * stop_profit_rate)
 
             if old_profit_sale_stop_loss_price < new_profit_sale_stop_loss_price:
-                print("LOG: More opportunity to Extend open Sale Stop loss Order ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
+                print(datetime.now(), "LOG: More opportunity to Extend open Sale Stop loss Order ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
                 #cancel_order =cancelOrder(exchange, order_id)
                 #order.profit_sale_process_flag = false
                 #order.profit_sale_txn_id = ""
@@ -329,11 +415,12 @@ def start():
                 sessionCommit()
 
             elif current_price < old_profit_sale_stop_loss_price:
-                print("LOG: Current price dropped below present price_profit_stop_loss;  ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
+                print(datetime.now(), "LOG: Current price dropped below present price_profit_stop_loss;  ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
                 #cancel_order =cancelOrder(exchange, order_id)
                 #time.sleep(5)
-                print("LOG: Time to cash out .........")
+                print(datetime.now(), "LOG: Time to cash out .........")
                 executeStopLoss(exchange, quantity, order, prices)
+                checkBotPermit()
                 time.sleep(PROFIT_SLEEP)
 
 
@@ -349,29 +436,29 @@ def runBatch():
         session.query(Order).filter(Order.sold_flag==False).update({Order.sold_flag:True})
 
     while run:
-        #current_asset = getMyAsset(config.get("root_asset"))
-        #begin_asset = config.get("day_start_amount")
-        
-        #daily_loss_limit = begin_asset - (begin_asset* config["day_stop"]["loss"])
-        #if float(current_asset["free"]) < daily_loss_limit:
-        #    run = False
-        #    print("LOG: Shut down bot coz of daily loss limit triggered", begin_asset, daily_loss_limit, current_asset)
-        #    break
-
-        if run_count > config.get("stop_script"):
+        if run_count > STOP_COUNT:
             run = False
-            print("LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
+            print(datetime.now(), "LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
             break
 
         try:
             start()
-        except requests.exceptions.ConnectionError as e:
-            print("Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
+        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
+            print(datetime.now(), "Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
             time.sleep(ERROR_SLEEP)
 
         time.sleep(BOT_FREQUENCY)
 
     session.close()
 
-if config.get("start_bot"):    
+
+if config.get("start_bot"):      
     runBatch()
+
+            
+
+
+
+
+
+    
