@@ -1,0 +1,5 @@
+{
+  "python.linting.pylintEnabled": true,
+  "python.linting.enabled": true,
+  "python.linting.pylintPath": "/Users/abinash/.local/share/virtualenvs/trading-bot-aS43uWVh/bin/pylint",
+}
