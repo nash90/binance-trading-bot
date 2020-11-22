@@ -85,3 +85,82 @@
       }
    ]
 }
+
+
+
+2020-11-22 20:36:18.776191 LOG: Order Status 
+{
+   "symbol":"ADAUSDT",
+   "orderId":565481201,
+   "orderListId":-1,
+   "clientOrderId":"sFRtjowsI0cO4zVkOTvtUE",
+   "price":"0.12940000",
+   "origQty":"772.70000000",
+   "executedQty":"772.70000000",
+   "cummulativeQuoteQty":"99.82511300",
+   "status":"FILLED",
+   "timeInForce":"GTC",
+   "type":"LIMIT",
+   "side":"BUY",
+   "stopPrice":"0.00000000",
+   "icebergQty":"0.00000000",
+   "time":1606044964492,
+   "updateTime":1606044964492,
+   "isWorking":True,
+   "origQuoteOrderQty":"0.00000000"
+}
+
+Limit Buy Asset {
+   "symbol":"ADAUSDT",
+   "orderId":565481201,
+   "orderListId":-1,
+   "clientOrderId":"sFRtjowsI0cO4zVkOTvtUE",
+   "transactTime":1606044964492,
+   "price":"0.12940000",
+   "origQty":"772.70000000",
+   "executedQty":"772.70000000",
+   "cummulativeQuoteQty":"99.82511300",
+   "status":"FILLED",
+   "timeInForce":"GTC",
+   "type":"LIMIT",
+   "side":"BUY",
+   "fills":[
+      {
+         "price":"0.12919000",
+         "qty":"772.70000000",
+         "commission":"0.00254016",
+         "commissionAsset":"BNB",
+         "tradeId":42427583
+      }
+   ]
+}
+
+{
+   "symbol":"ADAUSDT",
+   "orderId":565555902,
+   "orderListId":-1,
+   "clientOrderId":"Nuz99Y4HSKI3PTqhzNMD2J",
+   "price":"0.12575000",
+   "origQty":"795.20000000",
+   "executedQty":"795.20000000",
+   "cummulativeQuoteQty":"99.99640000",
+   "status":"FILLED",
+   "timeInForce":"GTC",
+   "type":"LIMIT",
+   "side":"BUY",
+   "stopPrice":"0.00000000",
+   "icebergQty":"0.00000000",
+   "time":1606046010441,
+   "updateTime":1606046069742,
+   "isWorking":True,
+   "origQuoteOrderQty":"0.00000000"
+}
+
+
+  asset_list = [
+    (AB, BC, CA),
+    ("XRPUSDT", "XRPBNB", "BNBUSDT"),
+    ("BNBUSDT", "BNBEUR", "EURUSDT"),
+    ("LINKUSDT", "LINKBTC", "BTCUSDT"),
+    ("ADAUSDT", "ADABNB", "BNBUSDT"),
+  ]

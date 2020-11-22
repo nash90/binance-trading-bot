@@ -6,5 +6,8 @@ arbit_config = {
   "INIT_ASSET_AMOUNT": 100,
   "PAUSE_AFTER_TRADE": 30,
   "BOT_CYCLE": 1,
-  "PAUSE_AFTER_ERROR": 2
+  "PAUSE_AFTER_ERROR": 2,
+  "ASSET_LIST": [
+    ("XRPUSDT", "XRPBNB", "BNBUSDT"),
+  ]
 }

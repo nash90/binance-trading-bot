@@ -27,15 +27,13 @@ api_key = config["api_key"]
 api_secret = config["api_secret"]
 client = Client(api_key, api_secret)
 
-AB = "BTCUSDT"
-BC = "BTCEUR"
-CA = "EURUSDT"
 CUT_RATE = arbit_config.get("CUT_RATE")
 PROMIT_LIMIT = arbit_config.get("PROMIT_LIMIT")
 INIT_ASSET_AMOUNT = arbit_config.get("INIT_ASSET_AMOUNT")
 PAUSE_AFTER_TRADE = arbit_config.get("PAUSE_AFTER_TRADE")
 BOT_CYCLE = arbit_config.get("BOT_CYCLE")
 PAUSE_AFTER_ERROR = arbit_config.get("PAUSE_AFTER_ERROR")
+ASSET_LIST = arbit_config.get("ASSET_LIST")
 
 def get_all_tikers():
   items = client.get_all_tickers()
@@ -450,13 +448,7 @@ def process_asset(asset_set, tickers):
 
 
 def main():
-  asset_list = [
-    (AB, BC, CA),
-    ("XRPUSDT", "XRPBNB", "BNBUSDT"),
-    ("BNBUSDT", "BNBEUR", "EURUSDT"),
-    ("LINKUSDT", "LINKBTC", "BTCUSDT"),
-    ("ADAUSDT", "ADABNB", "BNBUSDT"),
-  ]
+  asset_list = ASSET_LIST
 
   book = get_all_orderbook()
   for asset_set in asset_list:
