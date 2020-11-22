@@ -168,7 +168,7 @@ def checkProfitable(rate_set):
   return res
 
 
-def saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id):
+def saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id, market_time):
   session = Session()
   (ab_symbol, bc_symbol, ca_symbol) = asset_set
   (ab_rate, bc_rate, ca_rate) = rate_set
@@ -176,8 +176,11 @@ def saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id):
   (cut_cost1, cut_cost2, cut_cost3, total_cost) = costs
   (profit_rate, net_profit_rate) = profits
 
+  if market_time == None:
+    market_time = datetime.now()
+
   record_market_arbi = Market_Arbi(
-    market_time = datetime.now(),
+    market_time = market_time,
     ab_symbol = ab_symbol,
     bc_symbol = bc_symbol,
     ca_symbol = ca_symbol,
@@ -341,8 +344,8 @@ def checkOrderProcessed(symbol, pending_order):
       else:
         current_rate = getCurrentRate(symbol)
         target_rate = float(order.get("price"))
-        drop_per = (target_rate - current_rate)/target_rate
-
+        drop_per = ((target_rate - current_rate)/target_rate)*100
+        print(datetime.now(), "Log: Limit Rate Drop percent: P", drop_per)
         if drop_per >  PROMIT_LIMIT:
           print(datetime.now(), "Log: Stop Loss Triggered: ", symbol, current_rate, " T: ", target_rate)
           
@@ -429,9 +432,10 @@ def process_asset(asset_set, tickers):
     rate_set = (price_ab, price_bc, price_ca)
   #print(rate_set)
   (conversion, costs, profits) = checkProfitable(rate_set)
-  print(datetime.now(), asset_set, profits, costs)
+  market_time = datetime.now()
+  print(market_time, asset_set, profits, costs)
   (trade_executed, trade_id) = checkProfitMargin(asset_set, profits, rate_set)
-  saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id)
+  saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id, market_time)
   if trade_executed:
     return True
   
