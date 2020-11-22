@@ -54,6 +54,11 @@ def get_all_orderbook():
     tik[key] = item
   return tik
 
+def getCurrentRate(symbol):
+  order_book_ab = client.get_order_book(symbol=symbol)
+  rate_ab = order_book_ab.get("asks")[0][0]
+  print(datetime.now(), "LOG: Get Current Rate ",symbol, rate_ab)
+  return rate_ab
 
 def getCurrentAssetRates(asset_set):
   if asset_set == None:
@@ -72,6 +77,57 @@ def getCurrentAssetRates(asset_set):
 
   return (float(rate_ab), float(rate_bc), float(rate_ca))
 
+
+def limitBuy(exchange, quantity, price):
+  
+    params = {
+        "symbol": exchange,
+        "quantity": quantity,
+        "price": price
+    }
+
+    print(params)
+    order = client.order_limit_buy(
+        symbol=params.get("symbol"),
+        quantity=params.get("quantity"),
+        price=params.get("price")
+    )
+    print(datetime.now(), "LOG: Limit Buy Asset",order)
+
+    return order    
+
+
+def limitSell(exchange, quantity, price):
+
+    params = {
+        "symbol": exchange,
+        "quantity": quantity,
+        "price": price
+    }
+
+    print(params)
+    order = client.order_limit_sell(
+        symbol=params.get("symbol"),
+        quantity=params.get("quantity"),
+        price=params.get("price")
+    )
+    print(datetime.now(), "LOG: Limit Sell Asset",order)
+
+    return order
+
+def checkOrderStatus(exchange, orderId):
+    params = {
+      "symbol": exchange,
+      "orderId": orderId
+    }
+    print(params)
+    order = client.get_order(
+      symbol=params.get("symbol"),
+      orderId=params.get("orderId"))
+
+    print(datetime.now(), "LOG: Got Order Status",order)
+
+    return order
 
 def checkProfitable(rate_set):
   if rate_set == None:
@@ -180,14 +236,15 @@ def saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity):
 def getRateFromFills(order):
     fills = order.get("fills")
     price = 0
-    if len(fills) > 0:
+    if fills != None and len(fills) > 0:
         price = float(fills[0]["price"])
         price = round(price, 6)
-    
+    else:
+      price = order.get("price")
     return price
 
 def marketBuy(exchange, quantity):
-
+  
     params = {
         "symbol": exchange,
         "quantity": quantity
@@ -265,7 +322,48 @@ def roundAssetAmount(amount=0, symbol=''):
 
   return getFloor(amount, 6)
 
+def checkOrderProcessed(symbol, pending_order):
+  orderId = pending_order.get("orderId")
+  order_done = False
+  limit_completed = False
+  order = None
+  while order_done == False:
+    print(datetime.now(), "Log: check if order was processed ", symbol, orderId)
+    try:
+      order = checkOrderStatus(symbol, orderId)
+      # print("Log: New Status Read ", symbol, order)
+      if order.get("status") == "FILLED":
+        order_done=True
+        limit_completed = True
+      elif order.get("status") == "CANCELED":
+        order_done=True
+        limit_completed = False
+      else:
+        time.sleep(2)
+    except Exception as e:
+      print(datetime.now(), "CheckOrder API fail, Try Again")
+      time.sleep(2)
+  return (limit_completed, order)
 
+
+def doLimitOrder(symbol, amount, rate, flow):
+  limit_completed = False
+  order = None
+  if flow == "AB":
+    order = limitBuy(symbol, amount, rate)
+  elif flow == "BC":
+    order = limitSell(symbol, amount, rate)
+  elif flow == "CA":
+    order = limitSell(symbol, amount, rate)
+
+  if order.get("status") == "FILLED":
+    limit_completed = True 
+  else:
+    (limit_completed, order) = checkOrderProcessed(symbol, order)
+    if limit_completed == False:
+      raise Exception("Limit Order Cancelled ", order)
+  return (limit_completed, order)
+  
 
 def executeTripleTrade(asset_set, rate_set):
   (AB, BC, CA) = asset_set
@@ -274,7 +372,8 @@ def executeTripleTrade(asset_set, rate_set):
   quantityA = INIT_ASSET_AMOUNT
   buy_quantity_b = quantityA / price_ab
   buy_quantity_b = roundAssetAmount(buy_quantity_b, AB)
-  order_b = marketBuy(AB, buy_quantity_b)
+  #order_b = marketBuy(AB, buy_quantity_b)
+  (limit_completed, order_b) = doLimitOrder(AB, buy_quantity_b, price_ab, "AB")
   quantityB = order_b.get("executedQty")
   real_quantity_a = order_b.get("cummulativeQuoteQty")
   rate_ab = getRateFromFills(order_b)
@@ -282,27 +381,33 @@ def executeTripleTrade(asset_set, rate_set):
   #buy_quantity_c = quantityB / price_bc
   #buy_quantity_c = roundAssetAmount(buy_quantity_c, BC)
   sell_quantity_b = roundAssetAmount(quantityB, BC)
-  order_c = marketSell(BC, sell_quantity_b)
+  #order_c = marketSell(BC, sell_quantity_b)
+  (limit_completed, order_c) = doLimitOrder(BC, sell_quantity_b, price_bc, "BC")
   quantityC = order_c.get("cummulativeQuoteQty")
   rate_bc = getRateFromFills(order_c)
 
   sell_quantity_c = roundAssetAmount(quantityC, CA)
-  order_a = marketSell(CA, sell_quantity_c)
+  #order_a = marketSell(CA, sell_quantity_c)
+  (limit_completed, order_a) = doLimitOrder(CA, sell_quantity_c, price_ca, "CA")
   returned_quantity = roundAssetAmount(order_a.get("cummulativeQuoteQty"))
   rate_ca = getRateFromFills(order_a)
 
   executed_rates = (rate_ab, rate_bc, rate_ca)
   executed_quantity = (real_quantity_a, sell_quantity_b, sell_quantity_c, returned_quantity)
 
-  return (executed_rates, executed_quantity)
+  return (True, executed_rates, executed_quantity)
 
 
 def checkProfitMargin(asset_set, profits, rate_set):
   net_profit = profits[1]
   if net_profit > PROMIT_LIMIT:
-    (executed_rates, executed_quantity) = executeTripleTrade(asset_set, rate_set)
-    trade_id = saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity)
-    return (True, trade_id) 
+    (execution_flag, executed_rates, executed_quantity) = executeTripleTrade(asset_set, rate_set)
+    if execution_flag:
+      trade_id = saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity)
+      return (True, trade_id)
+    else:
+      print("Trade Cancelled by executeTripleTrade Logic")
+      return (False, None)
   return (False, None)
 
 
@@ -356,4 +461,4 @@ def runBatch():
 
     time.sleep(BOT_CYCLE)
 
-runBatch()
+#runBatch()
