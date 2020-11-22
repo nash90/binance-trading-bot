@@ -58,7 +58,7 @@ def getCurrentRate(symbol):
   order_book_ab = client.get_order_book(symbol=symbol)
   rate_ab = order_book_ab.get("asks")[0][0]
   print(datetime.now(), "LOG: Get Current Rate ",symbol, rate_ab)
-  return rate_ab
+  return float(rate_ab)
 
 def getCurrentAssetRates(asset_set):
   if asset_set == None:
@@ -339,6 +339,13 @@ def checkOrderProcessed(symbol, pending_order):
         order_done=True
         limit_completed = False
       else:
+        current_rate = getCurrentRate(symbol)
+        target_rate = float(order.get("price"))
+        drop_per = (target_rate - current_rate)/target_rate
+
+        if drop_per >  PROMIT_LIMIT:
+          print(datetime.now(), "Log: Stop Loss Triggered: ", symbol, current_rate, " T: ", target_rate)
+          
         time.sleep(2)
     except Exception as e:
       print(datetime.now(), "CheckOrder API fail, Try Again")
