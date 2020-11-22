@@ -355,6 +355,12 @@ def checkOrderProcessed(symbol, pending_order):
       time.sleep(2)
   return (limit_completed, order)
 
+class OrderCancelledError(Exception):
+    """Exception raised for errors in the input.
+
+    """
+    def __init__(self, message):
+        self.message = message
 
 def doLimitOrder(symbol, amount, rate, flow):
   limit_completed = False
@@ -371,7 +377,7 @@ def doLimitOrder(symbol, amount, rate, flow):
   else:
     (limit_completed, order) = checkOrderProcessed(symbol, order)
     if limit_completed == False:
-      raise Exception("Limit Order Cancelled ", order)
+      raise OrderCancelledError("Limit Order Cancelled ", order)
   return (limit_completed, order)
   
 
@@ -466,7 +472,7 @@ def runBatch():
   while run:
     try:
       main()
-    except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
+    except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout, OrderCancelledError) as e:
       print("Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
       time.sleep(PAUSE_AFTER_ERROR)
 
