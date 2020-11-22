@@ -461,4 +461,4 @@ def runBatch():
 
     time.sleep(BOT_CYCLE)
 
-#runBatch()
+runBatch()
