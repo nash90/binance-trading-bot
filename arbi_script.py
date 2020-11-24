@@ -379,7 +379,7 @@ def checkOrderProcessed(symbol, pending_order, flow):
           sell_quantity = order.get("origQty")
           sell_quantity = roundAssetAmount(sell_quantity, market_sell_symbol)
           stop_loss_order = marketSell(market_sell_symbol, sell_quantity)
-          print(datetime.now(), "Log: STOP Loss Sell", market_sell_symbol, sell_quantity, sold_order)
+          print(datetime.now(), "Log: STOP Loss Sell", market_sell_symbol, sell_quantity, stop_loss_order)
           order = stop_loss_order
 
         order_done=True
