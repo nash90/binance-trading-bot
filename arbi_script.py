@@ -34,6 +34,7 @@ PAUSE_AFTER_TRADE = arbit_config.get("PAUSE_AFTER_TRADE")
 BOT_CYCLE = arbit_config.get("BOT_CYCLE")
 PAUSE_AFTER_ERROR = arbit_config.get("PAUSE_AFTER_ERROR")
 ASSET_LIST = arbit_config.get("ASSET_LIST")
+MAX_WAIT_TIME = 3600
 
 def get_all_tikers():
   items = client.get_all_tickers()
@@ -126,6 +127,22 @@ def checkOrderStatus(exchange, orderId):
     print(datetime.now(), "LOG: Got Order Status",order)
 
     return order
+
+
+def cancelOpenOrder(symbol, orderId):
+    params = {
+      "symbol": exchange,
+      "orderId": orderId
+    }
+    print(params)
+    order = client.cancel_order(
+      symbol=params.get("symbol"),
+      orderId=params.get("orderId"))
+
+    print(datetime.now(), "LOG: Cacel open order",order)
+
+    return order  
+
 
 def checkProfitable(rate_set):
   if rate_set == None:
@@ -323,11 +340,28 @@ def roundAssetAmount(amount=0, symbol=''):
 
   return getFloor(amount, 6)
 
+def validateWaitTime(order_init_time, now):
+  diff = now - order_init_time
+  if (diff.total_seconds() > MAX_WAIT_TIME):
+    return False
+  else:
+    return True
+
+
+class WaitExceededError(Exception):
+    """Exception raised for errors in the input.
+
+    """
+    def __init__(self, message):
+        self.message = message
+
+
 def checkOrderProcessed(symbol, pending_order):
   orderId = pending_order.get("orderId")
   order_done = False
   limit_completed = False
   order = None
+  order_init_time = datetime.now()
   while order_done == False:
     print(datetime.now(), "Log: check if order was processed ", symbol, orderId)
     try:
@@ -343,10 +377,15 @@ def checkOrderProcessed(symbol, pending_order):
         current_rate = getCurrentRate(symbol)
         target_rate = float(order.get("price"))
         drop_per = ((target_rate - current_rate)/target_rate)*100
-        print(datetime.now(), "Log: Limit Rate Drop percent: P", drop_per)
+        now = datetime.now()
+
+        print(now, "Log: Limit Rate Drop percent: P", drop_per)
         if drop_per >  PROMIT_LIMIT:
-          print(datetime.now(), "Log: Stop Loss Triggered: ", symbol, current_rate, " T: ", target_rate)
-          
+          print(now, "Log: Stop Loss Triggered: ", symbol, current_rate, " T: ", target_rate)
+        
+        if validateWaitTime(order_init_time, now) == False:
+          cancelOpenOrder(symbol, orderId)
+
         time.sleep(2)
     except Exception as e:
       print(datetime.now(), "CheckOrder API fail, Try Again")
@@ -360,15 +399,26 @@ class OrderCancelledError(Exception):
     def __init__(self, message):
         self.message = message
 
+class LimitOrderApiError(Exception):
+    """Exception raised for errors in the input.
+
+    """
+    def __init__(self, message):
+        self.message = message
+
 def doLimitOrder(symbol, amount, rate, flow):
   limit_completed = False
   order = None
-  if flow == "AB":
-    order = limitBuy(symbol, amount, rate)
-  elif flow == "BC":
-    order = limitSell(symbol, amount, rate)
-  elif flow == "CA":
-    order = limitSell(symbol, amount, rate)
+  try:
+    if flow == "AB":
+      order = limitBuy(symbol, amount, rate)
+    elif flow == "BC":
+      order = limitSell(symbol, amount, rate)
+    elif flow == "CA":
+      order = limitSell(symbol, amount, rate)
+  except Exception as e:
+    raise LimitOrderApiError("Limit order api Failed, maybe balace ran out")
+
 
   if order.get("status") == "FILLED":
     limit_completed = True 
@@ -464,7 +514,13 @@ def runBatch():
   while run:
     try:
       main()
-    except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout, OrderCancelledError) as e:
+    except (
+      requests.exceptions.ConnectionError,
+      requests.exceptions.ReadTimeout,
+      OrderCancelledError,
+      WaitExceededError,
+      LimitOrderApiError
+    ) as e:
       print("Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
       time.sleep(PAUSE_AFTER_ERROR)
 
