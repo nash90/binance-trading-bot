@@ -399,7 +399,7 @@ def checkOrderProcessed(symbol, pending_order, flow):
 
         time.sleep(2)
     except Exception as e:
-      print(datetime.now(), "CheckOrder API fail, Try Again")
+      print(datetime.now(), "CheckOrder API fail, Try Again", e)
       time.sleep(2)
   return (limit_completed, order)
 
@@ -428,6 +428,7 @@ def doLimitOrder(symbol, amount, rate, flow):
     elif flow == "CA":
       order = limitSell(symbol, amount, rate)
   except Exception as e:
+    print(e)
     raise LimitOrderApiError("Limit order api Failed, maybe balace ran out")
 
 
