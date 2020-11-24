@@ -131,7 +131,7 @@ def checkOrderStatus(exchange, orderId):
 
 def cancelOpenOrder(symbol, orderId):
     params = {
-      "symbol": exchange,
+      "symbol": symbol,
       "orderId": orderId
     }
     print(params)
