@@ -435,8 +435,8 @@ def doLimitOrder(symbol, amount, rate, flow):
     limit_completed = True 
   else:
     (limit_completed, order) = checkOrderProcessed(symbol, order, flow)
-    if limit_completed == False:
-      raise OrderCancelledError("Limit Order Cancelled ")
+    #if limit_completed == False:
+      #raise OrderCancelledError("Limit Order Cancelled ")
   return (limit_completed, order)
   
 
