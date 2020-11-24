@@ -219,12 +219,13 @@ def saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id, market
   session.close()
 
 
-def saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity):
+def saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity, last_order):
   (AB, BC, CA) = asset_set
   (profit_rate, net_profit_rate) = profits
   (ab_rate, bc_rate, ca_rate) = rate_set
   (real_rate_ab, real_rate_bc, real_rate_ca) = executed_rates
   [real_quantity_a, real_quantity_b, real_quantity_c, returned_quantity] = [float(x) for x in executed_quantity]
+  trade_log = last_order.get("type") + " : " + last_order.get("side") + " : " + last_order.get("status")
 
   session = Session()
   record_trade_arbi = Trade_Arbi(
@@ -242,7 +243,8 @@ def saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity):
     real_quantity_b = real_quantity_b,
     real_quantity_c = real_quantity_c,
     returned_quantity = returned_quantity,
-    predicted_profit_rate = net_profit_rate
+    predicted_profit_rate = net_profit_rate,
+    trade_log = trade_log
   )
   addDataToDB(session, record_trade_arbi)
   trade_id = record_trade_arbi.id
@@ -356,12 +358,13 @@ class WaitExceededError(Exception):
         self.message = message
 
 
-def checkOrderProcessed(symbol, pending_order):
+def checkOrderProcessed(symbol, pending_order, flow):
   orderId = pending_order.get("orderId")
   order_done = False
   limit_completed = False
   order = None
   order_init_time = datetime.now()
+  stop_loss_order = None
   while order_done == False:
     print(datetime.now(), "Log: check if order was processed ", symbol, orderId)
     try:
@@ -371,6 +374,14 @@ def checkOrderProcessed(symbol, pending_order):
         order_done=True
         limit_completed = True
       elif order.get("status") == "CANCELED":
+        if flow == "BC" or flow == "CA":
+          market_sell_symbol = symbol[:3] + "USDT"
+          sell_quantity = order.get("origQty")
+          sell_quantity = roundAssetAmount(sell_quantity, market_sell_symbol)
+          stop_loss_order = marketSell(market_sell_symbol, sell_quantity)
+          print(datetime.now(), "Log: STOP Loss Sell", market_sell_symbol, sell_quantity, sold_order)
+          order = stop_loss_order
+
         order_done=True
         limit_completed = False
       else:
@@ -423,7 +434,7 @@ def doLimitOrder(symbol, amount, rate, flow):
   if order.get("status") == "FILLED":
     limit_completed = True 
   else:
-    (limit_completed, order) = checkOrderProcessed(symbol, order)
+    (limit_completed, order) = checkOrderProcessed(symbol, order, flow)
     if limit_completed == False:
       raise OrderCancelledError("Limit Order Cancelled ")
   return (limit_completed, order)
@@ -438,6 +449,12 @@ def executeTripleTrade(asset_set, rate_set):
   buy_quantity_b = roundAssetAmount(buy_quantity_b, AB)
   #order_b = marketBuy(AB, buy_quantity_b)
   (limit_completed, order_b) = doLimitOrder(AB, buy_quantity_b, price_ab, "AB")
+
+  if limit_completed == False:
+    executed_rates = (None, None, None)
+    executed_quantity = (None, None, None, order_b.get("cummulativeQuoteQty"))
+    return (True, executed_rates, executed_quantity, order_b)
+
   quantityB = order_b.get("executedQty")
   real_quantity_a = order_b.get("cummulativeQuoteQty")
   rate_ab = getRateFromFills(order_b)
@@ -447,27 +464,34 @@ def executeTripleTrade(asset_set, rate_set):
   sell_quantity_b = roundAssetAmount(quantityB, BC)
   #order_c = marketSell(BC, sell_quantity_b)
   (limit_completed, order_c) = doLimitOrder(BC, sell_quantity_b, price_bc, "BC")
+
+  if limit_completed == False:
+    executed_rates = (rate_ab, None, None)
+    executed_quantity = (real_quantity_a, sell_quantity_b, None, order_c.get("cummulativeQuoteQty"))
+    return (True, executed_rates, executed_quantity, order_c)
+
   quantityC = order_c.get("cummulativeQuoteQty")
   rate_bc = getRateFromFills(order_c)
 
   sell_quantity_c = roundAssetAmount(quantityC, CA)
   #order_a = marketSell(CA, sell_quantity_c)
   (limit_completed, order_a) = doLimitOrder(CA, sell_quantity_c, price_ca, "CA")
+
   returned_quantity = roundAssetAmount(order_a.get("cummulativeQuoteQty"))
   rate_ca = getRateFromFills(order_a)
 
   executed_rates = (rate_ab, rate_bc, rate_ca)
   executed_quantity = (real_quantity_a, sell_quantity_b, sell_quantity_c, returned_quantity)
 
-  return (True, executed_rates, executed_quantity)
+  return (True, executed_rates, executed_quantity, order_a)
 
 
 def checkProfitMargin(asset_set, profits, rate_set):
   net_profit = profits[1]
   if net_profit > PROMIT_LIMIT:
-    (execution_flag, executed_rates, executed_quantity) = executeTripleTrade(asset_set, rate_set)
+    (execution_flag, executed_rates, executed_quantity, last_order) = executeTripleTrade(asset_set, rate_set)
     if execution_flag:
-      trade_id = saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity)
+      trade_id = saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity, last_order)
       return (True, trade_id)
     else:
       print("Trade Cancelled by executeTripleTrade Logic")
