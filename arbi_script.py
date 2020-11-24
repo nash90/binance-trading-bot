@@ -452,8 +452,8 @@ def executeTripleTrade(asset_set, rate_set):
   (limit_completed, order_b) = doLimitOrder(AB, buy_quantity_b, price_ab, "AB")
 
   if limit_completed == False:
-    executed_rates = (None, None, None)
-    executed_quantity = (None, None, None, order_b.get("cummulativeQuoteQty"))
+    executed_rates = (0, 0, 0)
+    executed_quantity = (0, 0, 0, order_b.get("cummulativeQuoteQty"))
     return (True, executed_rates, executed_quantity, order_b)
 
   quantityB = order_b.get("executedQty")
@@ -467,8 +467,8 @@ def executeTripleTrade(asset_set, rate_set):
   (limit_completed, order_c) = doLimitOrder(BC, sell_quantity_b, price_bc, "BC")
 
   if limit_completed == False:
-    executed_rates = (rate_ab, None, None)
-    executed_quantity = (real_quantity_a, sell_quantity_b, None, order_c.get("cummulativeQuoteQty"))
+    executed_rates = (rate_ab, 0, 0)
+    executed_quantity = (real_quantity_a, sell_quantity_b, 0, order_c.get("cummulativeQuoteQty"))
     return (True, executed_rates, executed_quantity, order_c)
 
   quantityC = order_c.get("cummulativeQuoteQty")
