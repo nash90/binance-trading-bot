@@ -394,7 +394,7 @@ def checkOrderProcessed(symbol, pending_order, flow):
         if drop_per >  PROMIT_LIMIT:
           print(now, "Log: Stop Loss Triggered: ", symbol, current_rate, " T: ", target_rate)
         
-        if validateWaitTime(order_init_time, now) == False:
+        if order.get("status") != "PARTIALLY_FILLED" and validateWaitTime(order_init_time, now) == False:
           cancelOpenOrder(symbol, orderId)
 
         time.sleep(2)
