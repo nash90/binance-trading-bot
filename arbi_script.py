@@ -70,9 +70,9 @@ def getCurrentAssetRates(asset_set):
   order_book_ab = client.get_order_book(symbol=ab)
   rate_ab = order_book_ab.get("asks")[0][0]
   order_book_bc = client.get_order_book(symbol=bc)
-  rate_bc = order_book_bc.get("asks")[SELL_BOOK_INDEX][0]
+  rate_bc = order_book_bc.get("bids")[SELL_BOOK_INDEX][0]
   order_book_ca = client.get_order_book(symbol=ca)
-  rate_ca = order_book_ca.get("asks")[SELL_BOOK_INDEX][0]
+  rate_ca = order_book_ca.get("bids")[SELL_BOOK_INDEX][0]
 
   #print(rate_ab, rate_bc, rate_ca)
 
