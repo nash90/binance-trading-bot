@@ -35,6 +35,8 @@ BOT_CYCLE = arbit_config.get("BOT_CYCLE")
 PAUSE_AFTER_ERROR = arbit_config.get("PAUSE_AFTER_ERROR")
 ASSET_LIST = arbit_config.get("ASSET_LIST")
 MAX_WAIT_TIME = 3600
+SELL_BOOK_INDEX = 5
+GET_ALL_ORDER_BOOK = False
 
 def get_all_tikers():
   items = client.get_all_tickers()
@@ -68,9 +70,9 @@ def getCurrentAssetRates(asset_set):
   order_book_ab = client.get_order_book(symbol=ab)
   rate_ab = order_book_ab.get("asks")[0][0]
   order_book_bc = client.get_order_book(symbol=bc)
-  rate_bc = order_book_bc.get("asks")[0][0]
+  rate_bc = order_book_bc.get("asks")[SELL_BOOK_INDEX][0]
   order_book_ca = client.get_order_book(symbol=ca)
-  rate_ca = order_book_ca.get("asks")[0][0]
+  rate_ca = order_book_ca.get("asks")[SELL_BOOK_INDEX][0]
 
   #print(rate_ab, rate_bc, rate_ca)
 
@@ -524,8 +526,9 @@ def process_asset(asset_set, tickers):
 
 def main():
   asset_list = ASSET_LIST
-
-  book = get_all_orderbook()
+  book = None
+  if GET_ALL_ORDER_BOOK == True:
+    book = get_all_orderbook()
   for asset_set in asset_list:
     trade_executed = process_asset(asset_set, book)
     if trade_executed:
