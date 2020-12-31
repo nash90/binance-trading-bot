@@ -318,7 +318,10 @@ def permitCandleStick():
   log_elements = log_elements.to_dict('records')
   return_data = latest_signals.to_dict('records')
 
-  if VALIDATE_CANDLESTICK == False or runValidations(current, log_elements) == False:
+  if VALIDATE_CANDLESTICK == False
+    return [True, return_data]
+  
+  if runValidations(current, log_elements) == False:
     return [False, return_data]
 
   return_data = saveCandles(return_data)
