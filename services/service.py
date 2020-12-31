@@ -48,7 +48,7 @@ def sleepTillNextDay(today):
 
 
 def checkBotPermit():
-    if config.get("check_permit") == False:
+    if config.get("bot_permit").get("check_permit") == False:
         return
 
     daily_loss_margin = config.get("bot_permit").get("daily_loss_margin")

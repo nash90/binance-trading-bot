@@ -31,7 +31,7 @@ stop_loss = 10
 profit_rate = config["profit_rate"]
 stop_profit_rate = config["stop_profit_rate"]
 stop_profit = 0
-run_count = 0
+run_count = 1
 STOP_COUNT = config.get("stop_script")
 BOT_FREQUENCY = config.get("bot_freqency")
 PROFIT_SLEEP = config.get("profit_sleep")
@@ -432,6 +432,7 @@ def start():
 
 def runBatch():
     global begin_asset
+    global run_count
     run = True
     if config.get("reset_db") == True:
         session.query(Order).filter(Order.sold_flag==False).update({Order.sold_flag:True})
