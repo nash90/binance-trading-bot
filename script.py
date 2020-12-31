@@ -420,6 +420,8 @@ def start():
                 #time.sleep(5)
                 print(datetime.now(), "LOG: Time to cash out .........")
                 executeStopLoss(exchange, quantity, order, prices)
+                if STOP_COUNT > 0:
+                    run_count += 1
                 checkBotPermit()
                 time.sleep(PROFIT_SLEEP)
 
