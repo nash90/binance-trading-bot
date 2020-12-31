@@ -35,7 +35,7 @@ BOT_CYCLE = arbit_config.get("BOT_CYCLE")
 PAUSE_AFTER_ERROR = arbit_config.get("PAUSE_AFTER_ERROR")
 ASSET_LIST = arbit_config.get("ASSET_LIST")
 MAX_WAIT_TIME = 24*3600
-SELL_BOOK_INDEX = 5
+SELL_BOOK_INDEX = 0
 GET_ALL_ORDER_BOOK = False
 
 def get_all_tikers():
