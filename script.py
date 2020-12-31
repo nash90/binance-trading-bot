@@ -376,7 +376,7 @@ def start():
         price_profit_stop_loss = prices.get("stop_limit_profit")
 
         if order.profit_sale_process_flag == False:
-            print(datetime.now(), "LOG: Not Open Sale Stop loss Order ")
+            print(datetime.now(), "LOG: Not Open Sale Stop loss Order ", prices)
             
             if current_price < price_order_stop_loss:
                 print(datetime.now(), "LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
@@ -400,7 +400,7 @@ def start():
                 print(datetime.now(), "LOG: Keep Observing Market for Selling Opprtunity", prices) 
 
         else:
-            print(datetime.now(), "LOG: Open Sale Stop loss Order Found ", order.id)
+            print(datetime.now(), "LOG: Open Sale Stop loss Order Found ", order.id, prices)
             old_profit_sale_stop_loss_price = order.profit_sale_stop_loss_price
 
             new_profit_sale_stop_loss_price = current_price - (current_price * stop_profit_rate)
@@ -417,7 +417,7 @@ def start():
                 print(datetime.now(), "LOG: Current price dropped below present price_profit_stop_loss;  ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
                 #cancel_order =cancelOrder(exchange, order_id)
                 #time.sleep(5)
-                print(datetime.now(), "LOG: Time to cash out .........")
+                print(datetime.now(), "LOG: Time to cash out .........", prices)
                 executeStopLoss(exchange, quantity, order, prices)
                 if STOP_COUNT > 0:
                     run_count += 1
