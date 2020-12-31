@@ -322,42 +322,41 @@ def start():
         print(datetime.now(), "LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
         validated = True
         latest_candels = []
-        if config.get("bot_permit").get("validate_candlestick") == True:
-            [validated, latest_candels] = permitCandleStick()
-            if validated == True and ml_config.get("enable_ml_trade") == True:
-                ml_file = ml_config.get("model_file")
-                scale_file = ml_config.get("scale_file")
-                model = loadObject(ml_file)
-                scaler = loadObject(scale_file)
+        [validated, latest_candels] = permitCandleStick()
+        if validated == True and ml_config.get("enable_ml_trade") == True:
+            ml_file = ml_config.get("model_file")
+            scale_file = ml_config.get("scale_file")
+            model = loadObject(ml_file)
+            scaler = loadObject(scale_file)
 
-                print(datetime.now(), "LOG: ML model Loaded", model)
-                arranged_candel_data = createNumericCandleDictFromDict(
-                  c0=latest_candels[0],
-                  c1=latest_candels[1], 
-                  c2=latest_candels[2], 
-                  c3=latest_candels[3], 
-                  c4=latest_candels[4],   
-                )
-                print(datetime.now(), "LOG: Candle Data arranged before ML check", arranged_candel_data)
-                df = pd.DataFrame([arranged_candel_data])
-                #print("LOG: Data Frame of arranged Candle Data", df)
-                scaled_data = scaler.transform(df)
-                probab = model.predict_proba(scaled_data)
-                print(datetime.now(), "LOG: Profitability Predictions", probab)
-                if CHECK_PROFITABLE_PREDICTION:
-                    profitable_probablity = probab[0][1]
-                    if profitable_probablity > MIN_PROFIT_PROBA:
-                        validated = True 
-                    else:
-                        print(datetime.now(), "LOG: Simple Candle Validation Passed but PROFIT Prediction Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
-                        validated = False
-                if CHECK_LOSS_PREDICTION:
-                    loss_probablity = probab[0][0]
-                    if loss_probablity > MAX_LOSS_PROBA:
-                        validated = False
-                        print(datetime.now(), "LOG: Simple Candle Validation Passed but LOSS Prediction Validation Failed", MAX_LOSS_PROBA, loss_probablity)
-                    else:
-                        validated = True
+            print(datetime.now(), "LOG: ML model Loaded", model)
+            arranged_candel_data = createNumericCandleDictFromDict(
+                c0=latest_candels[0],
+                c1=latest_candels[1], 
+                c2=latest_candels[2], 
+                c3=latest_candels[3], 
+                c4=latest_candels[4],   
+            )
+            print(datetime.now(), "LOG: Candle Data arranged before ML check", arranged_candel_data)
+            df = pd.DataFrame([arranged_candel_data])
+            #print("LOG: Data Frame of arranged Candle Data", df)
+            scaled_data = scaler.transform(df)
+            probab = model.predict_proba(scaled_data)
+            print(datetime.now(), "LOG: Profitability Predictions", probab)
+            if CHECK_PROFITABLE_PREDICTION:
+                profitable_probablity = probab[0][1]
+                if profitable_probablity > MIN_PROFIT_PROBA:
+                    validated = True 
+                else:
+                    print(datetime.now(), "LOG: Simple Candle Validation Passed but PROFIT Prediction Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
+                    validated = False
+            if CHECK_LOSS_PREDICTION:
+                loss_probablity = probab[0][0]
+                if loss_probablity > MAX_LOSS_PROBA:
+                    validated = False
+                    print(datetime.now(), "LOG: Simple Candle Validation Passed but LOSS Prediction Validation Failed", MAX_LOSS_PROBA, loss_probablity)
+                else:
+                    validated = True
 
         
         if validated:
