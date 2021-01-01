@@ -14,6 +14,8 @@ from models.base import Base
 from models.base import engine
 from models.base import Session
 from models.models import Order
+from models.mock import getMarketBuyMock
+from models.mock import getMarketSellMock
 from services.service import checkBotPermit
 from services.kline import permitCandleStick
 from configs.ml_config import ml_config
@@ -41,6 +43,7 @@ MIN_PROFIT_PROBA = ml_config.get("min_profitable_probablity")
 MAX_LOSS_PROBA = ml_config.get("max_loss_probablity")
 CHECK_PROFITABLE_PREDICTION = ml_config.get("check_profitable_prediction")
 CHECK_LOSS_PREDICTION = ml_config.get("check_loss_prediction")
+MOCK_TRADE = config.get("mock_trade")
 
 session = Session()
 # APP constants
@@ -234,7 +237,11 @@ buy_size = round(buy_size, 4)
 
 
 def executeStopLoss(exchange, quantity, order, prices):
-    sold = marketSell(exchange, quantity)
+
+    if MOCK_TRADE == True:
+        sold = getMarketSellMock("BTCUSDT", prices["current_price"], quantity, quantity, buy_size)
+    else:
+        sold = marketSell(exchange, quantity)
     order.market_sell_txn_id = sold.get("orderId")
     order.sold_flag = True
     order.all_prices = json.dumps(prices)
@@ -253,7 +260,12 @@ def executeStopLoss(exchange, quantity, order, prices):
 def createFreshOrder(exchange, current_price, latest_candels):
     ammount = buy_size / current_price
     ammount = round(ammount, 6)
-    new_order = marketBuy(exchange, ammount)   
+
+    if MOCK_TRADE == True:
+        new_order = getMarketBuyMock("BTCUSDT", current_price, ammount, ammount, buy_size)
+    else:
+        new_order = marketBuy(exchange, ammount)  
+ 
     price_mb = round(float(new_order.get("price")), 2)
     fills = new_order.get("fills")
     if len(fills) > 0:

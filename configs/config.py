@@ -4,7 +4,8 @@ db_url = os.environ['PSQL_DB_HOST'] + ':5432/' + os.environ['PSQL_BINBOT_DB_NAME
 
 config = {
     "reset_db":False,
-    "start_bot":True,    
+    "start_bot":True,
+    "mock_trade":False,    
     "db":{
         "db_type":"postgresql",
         "file":"data.db",
