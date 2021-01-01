@@ -82,7 +82,7 @@ def getMarketSellMock(symbol, price, qty, executedQty, cummulativeQuoteQty):
   market_sell["origQty"] = qty
   market_sell["executedQty"] = qty
   market_sell["cummulativeQuoteQty"] = cummulativeQuoteQty
-  market_sell["fills"] = market_buy_fills
+  market_sell["fills"] = market_sell_fills
   print("LOG: Trade Mock: Market Sell", market_sell)
   return market_sell
 
