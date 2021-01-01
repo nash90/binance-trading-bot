@@ -450,7 +450,7 @@ def runBatch():
         session.query(Order).filter(Order.sold_flag==False).update({Order.sold_flag:True})
 
     while run:
-        if run_count > STOP_COUNT:
+        if STOP_COUNT > 0 and run_count > STOP_COUNT:
             run = False
             print(datetime.now(), "LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
             break

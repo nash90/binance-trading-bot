@@ -55,10 +55,10 @@ market_buy_sample = {
    "fills":market_buy_fills_sample
 }
 
-def getMarketBuyMock(symbol = "BTCUSDT", price, qty, executedQty, cummulativeQuoteQty):
+def getMarketBuyMock(symbol, price, qty, executedQty, cummulativeQuoteQty):
   market_buy_fills = market_buy_fills_sample
-  market_buy_fills["price"] = price
-  market_buy_fills["qty"] = qty
+  market_buy_fills[0]["price"] = price
+  market_buy_fills[0]["qty"] = qty
 
   market_buy = market_buy_sample
   market_buy["symbol"] = symbol
@@ -71,10 +71,10 @@ def getMarketBuyMock(symbol = "BTCUSDT", price, qty, executedQty, cummulativeQuo
   return market_buy
 
 
-def getMarketSellMock(symbol = "BTCUSDT", price, qty, executedQty, cummulativeQuoteQty):
+def getMarketSellMock(symbol, price, qty, executedQty, cummulativeQuoteQty):
   market_sell_fills = market_sell_fills_sample
-  market_sell_fills["price"] = price
-  market_sell_fills["qty"] = qty
+  market_sell_fills[0]["price"] = price
+  market_sell_fills[0]["qty"] = qty
 
   market_sell = market_sell_sample
   market_sell["symbol"] = symbol

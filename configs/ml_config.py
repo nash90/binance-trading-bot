@@ -1,7 +1,7 @@
 import os
 
 ml_config = {
-  "enable_ml_trade": True,
+  "enable_ml_trade": False,
   "model_file": "ml/ml_models/mlp_model.txt",
   "scale_file": "ml/ml_models/mlp_scale.txt",
   "min_profitable_probablity": 0.999,
