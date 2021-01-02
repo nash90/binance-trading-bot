@@ -72,7 +72,7 @@ def getMarketBuyMock(symbol, price, qty, executedQty, cummulativeQuoteQty):
 
 
 def getMarketSellMock(symbol, price, qty, executedQty, cummulativeQuoteQty):
-  cummulativeQuoteQty = price * qty
+  cummulativeQuoteQty = float(price) * float(qty)
   market_sell_fills = market_sell_fills_sample
   market_sell_fills[0]["price"] = price
   market_sell_fills[0]["qty"] = qty
