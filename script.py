@@ -14,6 +14,8 @@ from models.base import Base
 from models.base import engine
 from models.base import Session
 from models.models import Order
+from models.mock import getMarketBuyMock
+from models.mock import getMarketSellMock
 from services.service import checkBotPermit
 from services.kline import permitCandleStick
 from configs.ml_config import ml_config
@@ -31,7 +33,7 @@ stop_loss = 10
 profit_rate = config["profit_rate"]
 stop_profit_rate = config["stop_profit_rate"]
 stop_profit = 0
-run_count = 0
+run_count = 1
 STOP_COUNT = config.get("stop_script")
 BOT_FREQUENCY = config.get("bot_freqency")
 PROFIT_SLEEP = config.get("profit_sleep")
@@ -41,6 +43,7 @@ MIN_PROFIT_PROBA = ml_config.get("min_profitable_probablity")
 MAX_LOSS_PROBA = ml_config.get("max_loss_probablity")
 CHECK_PROFITABLE_PREDICTION = ml_config.get("check_profitable_prediction")
 CHECK_LOSS_PREDICTION = ml_config.get("check_loss_prediction")
+MOCK_TRADE = config.get("mock_trade")
 
 session = Session()
 # APP constants
@@ -234,7 +237,11 @@ buy_size = round(buy_size, 4)
 
 
 def executeStopLoss(exchange, quantity, order, prices):
-    sold = marketSell(exchange, quantity)
+
+    if MOCK_TRADE == True:
+        sold = getMarketSellMock("BTCUSDT", prices["current_price"], quantity, quantity, buy_size)
+    else:
+        sold = marketSell(exchange, quantity)
     order.market_sell_txn_id = sold.get("orderId")
     order.sold_flag = True
     order.all_prices = json.dumps(prices)
@@ -253,7 +260,12 @@ def executeStopLoss(exchange, quantity, order, prices):
 def createFreshOrder(exchange, current_price, latest_candels):
     ammount = buy_size / current_price
     ammount = round(ammount, 6)
-    new_order = marketBuy(exchange, ammount)   
+
+    if MOCK_TRADE == True:
+        new_order = getMarketBuyMock("BTCUSDT", current_price, ammount, ammount, buy_size)
+    else:
+        new_order = marketBuy(exchange, ammount)  
+ 
     price_mb = round(float(new_order.get("price")), 2)
     fills = new_order.get("fills")
     if len(fills) > 0:
@@ -322,42 +334,41 @@ def start():
         print(datetime.now(), "LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
         validated = True
         latest_candels = []
-        if config.get("bot_permit").get("validate_candlestick") == True:
-            [validated, latest_candels] = permitCandleStick()
-            if validated == True and ml_config.get("enable_ml_trade") == True:
-                ml_file = ml_config.get("model_file")
-                scale_file = ml_config.get("scale_file")
-                model = loadObject(ml_file)
-                scaler = loadObject(scale_file)
+        [validated, latest_candels] = permitCandleStick()
+        if validated == True and ml_config.get("enable_ml_trade") == True:
+            ml_file = ml_config.get("model_file")
+            scale_file = ml_config.get("scale_file")
+            model = loadObject(ml_file)
+            scaler = loadObject(scale_file)
 
-                print(datetime.now(), "LOG: ML model Loaded", model)
-                arranged_candel_data = createNumericCandleDictFromDict(
-                  c0=latest_candels[0],
-                  c1=latest_candels[1], 
-                  c2=latest_candels[2], 
-                  c3=latest_candels[3], 
-                  c4=latest_candels[4],   
-                )
-                print(datetime.now(), "LOG: Candle Data arranged before ML check", arranged_candel_data)
-                df = pd.DataFrame([arranged_candel_data])
-                #print("LOG: Data Frame of arranged Candle Data", df)
-                scaled_data = scaler.transform(df)
-                probab = model.predict_proba(scaled_data)
-                print(datetime.now(), "LOG: Profitability Predictions", probab)
-                if CHECK_PROFITABLE_PREDICTION:
-                    profitable_probablity = probab[0][1]
-                    if profitable_probablity > MIN_PROFIT_PROBA:
-                        validated = True 
-                    else:
-                        print(datetime.now(), "LOG: Simple Candle Validation Passed but PROFIT Prediction Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
-                        validated = False
-                if CHECK_LOSS_PREDICTION:
-                    loss_probablity = probab[0][0]
-                    if loss_probablity > MAX_LOSS_PROBA:
-                        validated = False
-                        print(datetime.now(), "LOG: Simple Candle Validation Passed but LOSS Prediction Validation Failed", MAX_LOSS_PROBA, loss_probablity)
-                    else:
-                        validated = True
+            print(datetime.now(), "LOG: ML model Loaded", model)
+            arranged_candel_data = createNumericCandleDictFromDict(
+                c0=latest_candels[0],
+                c1=latest_candels[1], 
+                c2=latest_candels[2], 
+                c3=latest_candels[3], 
+                c4=latest_candels[4],   
+            )
+            print(datetime.now(), "LOG: Candle Data arranged before ML check", arranged_candel_data)
+            df = pd.DataFrame([arranged_candel_data])
+            #print("LOG: Data Frame of arranged Candle Data", df)
+            scaled_data = scaler.transform(df)
+            probab = model.predict_proba(scaled_data)
+            print(datetime.now(), "LOG: Profitability Predictions", probab)
+            if CHECK_PROFITABLE_PREDICTION:
+                profitable_probablity = probab[0][1]
+                if profitable_probablity > MIN_PROFIT_PROBA:
+                    validated = True 
+                else:
+                    print(datetime.now(), "LOG: Simple Candle Validation Passed but PROFIT Prediction Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
+                    validated = False
+            if CHECK_LOSS_PREDICTION:
+                loss_probablity = probab[0][0]
+                if loss_probablity > MAX_LOSS_PROBA:
+                    validated = False
+                    print(datetime.now(), "LOG: Simple Candle Validation Passed but LOSS Prediction Validation Failed", MAX_LOSS_PROBA, loss_probablity)
+                else:
+                    validated = True
 
         
         if validated:
@@ -377,7 +388,7 @@ def start():
         price_profit_stop_loss = prices.get("stop_limit_profit")
 
         if order.profit_sale_process_flag == False:
-            print(datetime.now(), "LOG: Not Open Sale Stop loss Order ")
+            print(datetime.now(), "LOG: Not Open Sale Stop loss Order ", prices)
             
             if current_price < price_order_stop_loss:
                 print(datetime.now(), "LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
@@ -401,7 +412,7 @@ def start():
                 print(datetime.now(), "LOG: Keep Observing Market for Selling Opprtunity", prices) 
 
         else:
-            print(datetime.now(), "LOG: Open Sale Stop loss Order Found ", order.id)
+            print(datetime.now(), "LOG: Open Sale Stop loss Order Found ", order.id, prices)
             old_profit_sale_stop_loss_price = order.profit_sale_stop_loss_price
 
             new_profit_sale_stop_loss_price = current_price - (current_price * stop_profit_rate)
@@ -418,8 +429,10 @@ def start():
                 print(datetime.now(), "LOG: Current price dropped below present price_profit_stop_loss;  ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
                 #cancel_order =cancelOrder(exchange, order_id)
                 #time.sleep(5)
-                print(datetime.now(), "LOG: Time to cash out .........")
+                print(datetime.now(), "LOG: Time to cash out .........", prices)
                 executeStopLoss(exchange, quantity, order, prices)
+                if STOP_COUNT > 0:
+                    run_count += 1
                 checkBotPermit()
                 time.sleep(PROFIT_SLEEP)
 
@@ -431,12 +444,13 @@ def start():
 
 def runBatch():
     global begin_asset
+    global run_count
     run = True
     if config.get("reset_db") == True:
         session.query(Order).filter(Order.sold_flag==False).update({Order.sold_flag:True})
 
     while run:
-        if run_count > STOP_COUNT:
+        if STOP_COUNT > 0 and run_count > STOP_COUNT:
             run = False
             print(datetime.now(), "LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
             break

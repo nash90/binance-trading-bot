@@ -27,6 +27,7 @@ KLINE_INTERVAL_15MINUTE = Client.KLINE_INTERVAL_15MINUTE
 FETCH_LENGTH = "1 day ago JST"
 LOG_ELEMENTS = ["Open_time_str", "Open", "Close", "candle_pattern", "candle_score", "candle_cumsum", "signal2"]
 INVALID_CANDLE_SLEEP = config.get("bot_permit").get("invalid_candlestick_sleep")
+VALIDATE_CANDLESTICK = config.get("bot_permit").get("validate_candlestick")
 
 DATETIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
 
@@ -317,6 +318,10 @@ def permitCandleStick():
   log_elements = log_elements.to_dict('records')
   return_data = latest_signals.to_dict('records')
 
+  if VALIDATE_CANDLESTICK == False:
+    return_data = saveCandles(return_data)
+    return [True, return_data]
+  
   if runValidations(current, log_elements) == False:
     return [False, return_data]
 

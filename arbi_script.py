@@ -27,15 +27,16 @@ api_key = config["api_key"]
 api_secret = config["api_secret"]
 client = Client(api_key, api_secret)
 
-AB = "BTCUSDT"
-BC = "BTCEUR"
-CA = "EURUSDT"
 CUT_RATE = arbit_config.get("CUT_RATE")
 PROMIT_LIMIT = arbit_config.get("PROMIT_LIMIT")
 INIT_ASSET_AMOUNT = arbit_config.get("INIT_ASSET_AMOUNT")
 PAUSE_AFTER_TRADE = arbit_config.get("PAUSE_AFTER_TRADE")
 BOT_CYCLE = arbit_config.get("BOT_CYCLE")
 PAUSE_AFTER_ERROR = arbit_config.get("PAUSE_AFTER_ERROR")
+ASSET_LIST = arbit_config.get("ASSET_LIST")
+MAX_WAIT_TIME = 24*3600
+SELL_BOOK_INDEX = 0
+GET_ALL_ORDER_BOOK = False
 
 def get_all_tikers():
   items = client.get_all_tickers()
@@ -54,6 +55,11 @@ def get_all_orderbook():
     tik[key] = item
   return tik
 
+def getCurrentRate(symbol):
+  order_book_ab = client.get_order_book(symbol=symbol)
+  rate_ab = order_book_ab.get("asks")[0][0]
+  print(datetime.now(), "LOG: Get Current Rate ",symbol, rate_ab)
+  return float(rate_ab)
 
 def getCurrentAssetRates(asset_set):
   if asset_set == None:
@@ -64,13 +70,80 @@ def getCurrentAssetRates(asset_set):
   order_book_ab = client.get_order_book(symbol=ab)
   rate_ab = order_book_ab.get("asks")[0][0]
   order_book_bc = client.get_order_book(symbol=bc)
-  rate_bc = order_book_bc.get("asks")[0][0]
+  rate_bc = order_book_bc.get("bids")[SELL_BOOK_INDEX][0]
   order_book_ca = client.get_order_book(symbol=ca)
-  rate_ca = order_book_ca.get("asks")[0][0]
+  rate_ca = order_book_ca.get("bids")[SELL_BOOK_INDEX][0]
 
   #print(rate_ab, rate_bc, rate_ca)
 
   return (float(rate_ab), float(rate_bc), float(rate_ca))
+
+
+def limitBuy(exchange, quantity, price):
+  
+    params = {
+        "symbol": exchange,
+        "quantity": quantity,
+        "price": price
+    }
+
+    print(params)
+    order = client.order_limit_buy(
+        symbol=params.get("symbol"),
+        quantity=params.get("quantity"),
+        price=params.get("price")
+    )
+    print(datetime.now(), "LOG: Limit Buy Asset",order)
+
+    return order    
+
+
+def limitSell(exchange, quantity, price):
+
+    params = {
+        "symbol": exchange,
+        "quantity": quantity,
+        "price": price
+    }
+
+    print(params)
+    order = client.order_limit_sell(
+        symbol=params.get("symbol"),
+        quantity=params.get("quantity"),
+        price=params.get("price")
+    )
+    print(datetime.now(), "LOG: Limit Sell Asset",order)
+
+    return order
+
+def checkOrderStatus(exchange, orderId):
+    params = {
+      "symbol": exchange,
+      "orderId": orderId
+    }
+    print(params)
+    order = client.get_order(
+      symbol=params.get("symbol"),
+      orderId=params.get("orderId"))
+
+    print(datetime.now(), "LOG: Got Order Status",order)
+
+    return order
+
+
+def cancelOpenOrder(symbol, orderId):
+    params = {
+      "symbol": symbol,
+      "orderId": orderId
+    }
+    print(params)
+    order = client.cancel_order(
+      symbol=params.get("symbol"),
+      orderId=params.get("orderId"))
+
+    print(datetime.now(), "LOG: Cacel open order",order)
+
+    return order  
 
 
 def checkProfitable(rate_set):
@@ -112,7 +185,7 @@ def checkProfitable(rate_set):
   return res
 
 
-def saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id):
+def saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id, market_time):
   session = Session()
   (ab_symbol, bc_symbol, ca_symbol) = asset_set
   (ab_rate, bc_rate, ca_rate) = rate_set
@@ -120,8 +193,11 @@ def saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id):
   (cut_cost1, cut_cost2, cut_cost3, total_cost) = costs
   (profit_rate, net_profit_rate) = profits
 
+  if market_time == None:
+    market_time = datetime.now()
+
   record_market_arbi = Market_Arbi(
-    market_time = datetime.now(),
+    market_time = market_time,
     ab_symbol = ab_symbol,
     bc_symbol = bc_symbol,
     ca_symbol = ca_symbol,
@@ -145,12 +221,13 @@ def saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id):
   session.close()
 
 
-def saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity):
+def saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity, last_order):
   (AB, BC, CA) = asset_set
   (profit_rate, net_profit_rate) = profits
   (ab_rate, bc_rate, ca_rate) = rate_set
   (real_rate_ab, real_rate_bc, real_rate_ca) = executed_rates
   [real_quantity_a, real_quantity_b, real_quantity_c, returned_quantity] = [float(x) for x in executed_quantity]
+  trade_log = last_order.get("type") + " : " + last_order.get("side") + " : " + last_order.get("status")
 
   session = Session()
   record_trade_arbi = Trade_Arbi(
@@ -168,7 +245,8 @@ def saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity):
     real_quantity_b = real_quantity_b,
     real_quantity_c = real_quantity_c,
     returned_quantity = returned_quantity,
-    predicted_profit_rate = net_profit_rate
+    predicted_profit_rate = net_profit_rate,
+    trade_log = trade_log
   )
   addDataToDB(session, record_trade_arbi)
   trade_id = record_trade_arbi.id
@@ -180,14 +258,15 @@ def saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity):
 def getRateFromFills(order):
     fills = order.get("fills")
     price = 0
-    if len(fills) > 0:
+    if fills != None and len(fills) > 0:
         price = float(fills[0]["price"])
         price = round(price, 6)
-    
+    else:
+      price = order.get("price")
     return price
 
 def marketBuy(exchange, quantity):
-
+  
     params = {
         "symbol": exchange,
         "quantity": quantity
@@ -265,7 +344,104 @@ def roundAssetAmount(amount=0, symbol=''):
 
   return getFloor(amount, 6)
 
+def validateWaitTime(order_init_time, now):
+  diff = now - order_init_time
+  if (diff.total_seconds() > MAX_WAIT_TIME):
+    return False
+  else:
+    return True
 
+
+class WaitExceededError(Exception):
+    """Exception raised for errors in the input.
+
+    """
+    def __init__(self, message):
+        self.message = message
+
+
+def checkOrderProcessed(symbol, pending_order, flow):
+  orderId = pending_order.get("orderId")
+  order_done = False
+  limit_completed = False
+  order = None
+  order_init_time = datetime.now()
+  stop_loss_order = None
+  while order_done == False:
+    print(datetime.now(), "Log: check if order was processed ", symbol, orderId)
+    try:
+      order = checkOrderStatus(symbol, orderId)
+      # print("Log: New Status Read ", symbol, order)
+      if order.get("status") == "FILLED":
+        order_done=True
+        limit_completed = True
+      elif order.get("status") == "CANCELED":
+        if flow == "BC" or flow == "CA":
+          market_sell_symbol = symbol[:3] + "USDT"
+          sell_quantity = order.get("origQty")
+          sell_quantity = roundAssetAmount(sell_quantity, market_sell_symbol)
+          stop_loss_order = marketSell(market_sell_symbol, sell_quantity)
+          print(datetime.now(), "Log: STOP Loss Sell", market_sell_symbol, sell_quantity, stop_loss_order)
+          order = stop_loss_order
+
+        order_done=True
+        limit_completed = False
+      else:
+        current_rate = getCurrentRate(symbol)
+        target_rate = float(order.get("price"))
+        drop_per = ((target_rate - current_rate)/target_rate)*100
+        now = datetime.now()
+
+        print(now, "Log: Limit Rate Drop percent: P", drop_per)
+        if drop_per >  PROMIT_LIMIT:
+          print(now, "Log: Stop Loss Triggered: ", symbol, current_rate, " T: ", target_rate)
+        
+        if order.get("status") != "PARTIALLY_FILLED" and validateWaitTime(order_init_time, now) == False:
+          cancelOpenOrder(symbol, orderId)
+
+        time.sleep(2)
+    except Exception as e:
+      print(datetime.now(), "CheckOrder API fail, Try Again", e)
+      time.sleep(2)
+  return (limit_completed, order)
+
+class OrderCancelledError(Exception):
+    """Exception raised for errors in the input.
+
+    """
+    def __init__(self, message):
+        self.message = message
+
+class LimitOrderApiError(Exception):
+    """Exception raised for errors in the input.
+
+    """
+    def __init__(self, message):
+        self.message = message
+
+def doLimitOrder(symbol, amount, rate, flow):
+  limit_completed = False
+  order = None
+  try:
+    if flow == "AB":
+      order = limitBuy(symbol, amount, rate)
+    elif flow == "BC":
+      order = limitSell(symbol, amount, rate)
+    elif flow == "CA":
+      order = limitSell(symbol, amount, rate)
+  except Exception as e:
+    print(e)
+    raise LimitOrderApiError("Limit order api Failed, maybe balace ran out")
+
+
+  if order.get("status") == "FILLED":
+    limit_completed = True 
+  else:
+    (limit_completed, order) = checkOrderProcessed(symbol, order, flow)
+    #if limit_completed == False:
+      #raise OrderCancelledError("Limit Order Cancelled ")
+  return (limit_completed, order)
+  
 
 def executeTripleTrade(asset_set, rate_set):
   (AB, BC, CA) = asset_set
@@ -274,7 +450,14 @@ def executeTripleTrade(asset_set, rate_set):
   quantityA = INIT_ASSET_AMOUNT
   buy_quantity_b = quantityA / price_ab
   buy_quantity_b = roundAssetAmount(buy_quantity_b, AB)
-  order_b = marketBuy(AB, buy_quantity_b)
+  #order_b = marketBuy(AB, buy_quantity_b)
+  (limit_completed, order_b) = doLimitOrder(AB, buy_quantity_b, price_ab, "AB")
+
+  if limit_completed == False:
+    executed_rates = (0, 0, 0)
+    executed_quantity = (0, 0, 0, order_b.get("cummulativeQuoteQty"))
+    return (True, executed_rates, executed_quantity, order_b)
+
   quantityB = order_b.get("executedQty")
   real_quantity_a = order_b.get("cummulativeQuoteQty")
   rate_ab = getRateFromFills(order_b)
@@ -282,27 +465,40 @@ def executeTripleTrade(asset_set, rate_set):
   #buy_quantity_c = quantityB / price_bc
   #buy_quantity_c = roundAssetAmount(buy_quantity_c, BC)
   sell_quantity_b = roundAssetAmount(quantityB, BC)
-  order_c = marketSell(BC, sell_quantity_b)
+  #order_c = marketSell(BC, sell_quantity_b)
+  (limit_completed, order_c) = doLimitOrder(BC, sell_quantity_b, price_bc, "BC")
+
+  if limit_completed == False:
+    executed_rates = (rate_ab, 0, 0)
+    executed_quantity = (real_quantity_a, sell_quantity_b, 0, order_c.get("cummulativeQuoteQty"))
+    return (True, executed_rates, executed_quantity, order_c)
+
   quantityC = order_c.get("cummulativeQuoteQty")
   rate_bc = getRateFromFills(order_c)
 
   sell_quantity_c = roundAssetAmount(quantityC, CA)
-  order_a = marketSell(CA, sell_quantity_c)
+  #order_a = marketSell(CA, sell_quantity_c)
+  (limit_completed, order_a) = doLimitOrder(CA, sell_quantity_c, price_ca, "CA")
+
   returned_quantity = roundAssetAmount(order_a.get("cummulativeQuoteQty"))
   rate_ca = getRateFromFills(order_a)
 
   executed_rates = (rate_ab, rate_bc, rate_ca)
   executed_quantity = (real_quantity_a, sell_quantity_b, sell_quantity_c, returned_quantity)
 
-  return (executed_rates, executed_quantity)
+  return (True, executed_rates, executed_quantity, order_a)
 
 
 def checkProfitMargin(asset_set, profits, rate_set):
   net_profit = profits[1]
   if net_profit > PROMIT_LIMIT:
-    (executed_rates, executed_quantity) = executeTripleTrade(asset_set, rate_set)
-    trade_id = saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity)
-    return (True, trade_id) 
+    (execution_flag, executed_rates, executed_quantity, last_order) = executeTripleTrade(asset_set, rate_set)
+    if execution_flag:
+      trade_id = saveTrade(asset_set, profits, rate_set, executed_rates, executed_quantity, last_order)
+      return (True, trade_id)
+    else:
+      print("Trade Cancelled by executeTripleTrade Logic")
+      return (False, None)
   return (False, None)
 
 
@@ -317,9 +513,10 @@ def process_asset(asset_set, tickers):
     rate_set = (price_ab, price_bc, price_ca)
   #print(rate_set)
   (conversion, costs, profits) = checkProfitable(rate_set)
-  print(datetime.now(), asset_set, profits, costs)
+  market_time = datetime.now()
+  print(market_time, asset_set, profits, costs)
   (trade_executed, trade_id) = checkProfitMargin(asset_set, profits, rate_set)
-  saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id)
+  saveMarket(asset_set, rate_set, conversion, costs, profits, trade_id, market_time)
   if trade_executed:
     return True
   
@@ -328,15 +525,10 @@ def process_asset(asset_set, tickers):
 
 
 def main():
-  asset_list = [
-    (AB, BC, CA),
-    ("XRPUSDT", "XRPBNB", "BNBUSDT"),
-    ("BNBUSDT", "BNBEUR", "EURUSDT"),
-    ("LINKUSDT", "LINKBTC", "BTCUSDT"),
-    ("ADAUSDT", "ADABNB", "BNBUSDT"),
-  ]
-
-  book = get_all_orderbook()
+  asset_list = ASSET_LIST
+  book = None
+  if GET_ALL_ORDER_BOOK == True:
+    book = get_all_orderbook()
   for asset_set in asset_list:
     trade_executed = process_asset(asset_set, book)
     if trade_executed:
@@ -350,7 +542,13 @@ def runBatch():
   while run:
     try:
       main()
-    except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
+    except (
+      requests.exceptions.ConnectionError,
+      requests.exceptions.ReadTimeout,
+      OrderCancelledError,
+      WaitExceededError,
+      LimitOrderApiError
+    ) as e:
       print("Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
       time.sleep(PAUSE_AFTER_ERROR)
 
