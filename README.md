@@ -1,4 +1,4 @@
-# trading-bot
+# binance-trading-bot
 The repository consist of binance trading bots. There are two types of bot
 1. Kline trading bot
 2. 3 way arbitrage bot 
@@ -20,7 +20,7 @@ The task for the sample configuration is as follows
 * {"asset":"BTC", "exchange":"BTCUSDT", "min_limit":"0.005"} (Check BTC kline candle for trading (15 min order book used))
 
 #### Steps
-1. Make sure python and pipenv is installed and run ```pipenv install```
+1. Make sure python and pipenv is installed and from project root run ```pipenv install```
 2. For above sample task, set configs/config.py as follows
 
 ```
@@ -89,10 +89,10 @@ config = {
 3. From project root run ```pipenv run python script.py ```
 
 #### Task 2 (Run with machine learning enabled)
-A sample model is included. The model included as low accuracy, on reason is due to less training dataset. 
+A sample model is included. The model included is of low accuracy as the use of small training dataset. 
 To train and create a new model check functions in ml/ml.py
 #### Steps
-Steps to run the bot with ML model is same as Task 1 steps but need enable the config in config/ml_config
+Steps to run the bot with ML model is same as the steps in Task 1 but requires enabling the enable_ml_trade flag in config/ml_config
 ```
 ml_config = {
   "enable_ml_trade": True, # flag to enable ML trade on kl bot
@@ -107,7 +107,7 @@ ml_config = {
 ## 3 way arbitrage bot: 3 way trading rate based arbitrage bot
 ### how to run
 
-1. Make sure python and pipenv is installed and run ```pipenv install```
+1. Make sure python and pipenv is installed and from project root run ```pipenv install```
 2. For above sample task, set configs/arbit_config.py as follows
 ```
 import os
