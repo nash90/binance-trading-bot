@@ -9,7 +9,7 @@ The repository consist of binance trading bots. There are two types of bot
 * Postgres (Not required if using sqlite)
 ## Kline trading bot: Bot that trades based on Kline pattern with option to train and use ML for trade decision
 ### how to run
-#### Task
+#### Task 1 (Run without ML)
 The task for the sample configuration is as follows
 * Use sqlite database for simplicity and not to run extra db server
 * Kline pattern selected to put market buy order are Bullish_Harami, Bullish_Engulfing, Piercing_Line_bullish, Hanging_Man_bullish
@@ -29,7 +29,7 @@ import os
 db_url = os.environ['PSQL_DB_HOST'] + ':5432/' + os.environ['PSQL_BINBOT_DB_NAME']
 
 config = {
-    "reset_db":False, # clear open order in Database if any with flag off
+    "reset_db":False, # clear open order in Database if any with flag on
     "start_bot":True, # turn on to run bot, turn off on debug
     "mock_trade":False, # turn on to mock the binance trade transaction instead of a real one
     "db":{
@@ -88,8 +88,42 @@ config = {
 ```
 3. From project root run ```pipenv run python script.py ```
 
-
+#### Task 2 (Run with machine learning enabled)
+A sample model is included. The model included as low accuracy, on reason is due to less training dataset. 
+To train and create a new model check functions in ml/ml.py
+#### Steps
+Steps to run the bot with ML model is same as Task 1 steps but need enable the config in config/ml_config
+```
+ml_config = {
+  "enable_ml_trade": True, # flag to enable ML trade on kl bot
+  "model_file": "ml/ml_models/mlp_model.txt", # model file
+  "scale_file": "ml/ml_models/mlp_scale.txt", # data scaler used by the model
+  "min_profitable_probablity": 0.999, # minimum profit probablity prediction to execute (set high if highly uneven dataset)
+  "check_profitable_prediction": False, # base in profitable prediction
+  "check_loss_prediction": True, # base on loss prediction when False Negetive are high
+  "max_loss_probablity": 0.85 # loss probability prediction to consider
+}
+```
 ## 3 way arbitrage bot: 3 way trading rate based arbitrage bot
 ### how to run
-```pipenv run python arbi_script.py```
-TODO: Step and config Details
+
+1. Make sure python and pipenv is installed
+2. For above sample task, set configs/arbit_config.py as follows
+```
+import os
+
+arbit_config = {
+  "CUT_RATE": 0.00075, # rate charged by binance for each transaction
+  "PROMIT_LIMIT": 0.05, # arbitrage minimum profit rate to start trade, set slightly higher cause excution is MARKET SELL type and not limit
+  "INIT_ASSET_AMOUNT": 100, # Asset amount size to use in each trade
+  "PAUSE_AFTER_TRADE": 30, # time to pause bot after each trade 
+  "BOT_CYCLE": 1, # number of cycles to run
+  "PAUSE_AFTER_ERROR": 2, # time to pause after unknown error
+  "ASSET_LIST": [ # list of asset to try
+    ("XRPUSDT", "XRPBNB", "BNBUSDT"),
+  ]
+}
+
+```
+3. From project root run ```pipenv run python arbi_script.py```
+
