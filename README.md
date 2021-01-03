@@ -29,40 +29,41 @@ import os
 db_url = os.environ['PSQL_DB_HOST'] + ':5432/' + os.environ['PSQL_BINBOT_DB_NAME']
 
 config = {
-    "reset_db":False,
-    "start_bot":True,
-    "mock_trade":False,    
+    "reset_db":False, # clear open order in Database if any with flag off
+    "start_bot":True, # turn on to run bot, turn off on debug
+    "mock_trade":False, # turn on to mock the binance trade transaction instead of a real one
     "db":{
-        "db_type":"sqlite",
-        "file":"data.db",
-        "db_url": db_url,
-        "db_username": os.environ['PSQL_BINBOT_DB_USER'],
-        "db_password": os.environ['PSQL_BINBOT_DB_PWD'],    
+        "db_type":"sqlite", # tested on sqlite and postgresql
+        "file":"data.db", # for sqlite embedded db
+        "db_url": db_url, # db server url
+        "db_username": os.environ['PSQL_BINBOT_DB_USER'], # db username 
+        "db_password": os.environ['PSQL_BINBOT_DB_PWD'], # db password
+        # db_url, db_username, db_password is not necessary if db_type is set to sqlite
     },
-    "api_key":os.environ["BI_KEY"],
-    "api_secret":os.environ["BI_SEC"],
+    "api_key":os.environ["BI_KEY"], # set binance key directly here or in .env file
+    "api_secret":os.environ["BI_SEC"], # set binance secret directly here on in .env file
     "crypto_list":[
-        {"asset":"BTC", "exchange":"BTCUSDT", "min_limit":"0.005"}
+        {"asset":"BTC", "exchange":"BTCUSDT", "min_limit":"0.005"} # min_limit is not used
     ],
-    "stop_loss":0.0035,
-    "profit_rate":0.0045,
-    "stop_profit_rate":0.0015,
-    "stop_script":0,
-    "principle_amount":100,
-    "day_start_amount":10000,
-    "root_asset": "USDT",
+    "stop_loss":0.0035, # If current market price drop from buy prices by  more than this rate, do market sell at current price
+    "profit_rate":0.0045, # If current market price increase from buy prices by more than this rate, start processing for profit sale
+    "stop_profit_rate":0.0015, # If current market pricess drops this rate from the profit_rate (after crossing profit_rate), do market sell at current price to take profit
+    "stop_script":0, # run the buy sale for this number of times
+    "principle_amount":100, # max amount used in single trading
+    "day_start_amount":10000, # not used
+    "root_asset": "USDT", # trading base asset
     "bot_freqency":6,
-    "profit_sleep": 150,
-    "loss_sleep": 300,
-    "error_sleep":11,
+    "profit_sleep": 150, # sleep time on each profit transaction completion
+    "loss_sleep": 300, # sleep time on each loss transaction completion
+    "error_sleep":11, # sleep time on each unexpected error
     "bot_permit": {
-        "check_permit":True,
-        "daily_loss_margin": -0.02,
-        "daily_profit_margin": 0.01,
-        "daily_profit_stop_margin": 0.25,
-        "validate_candlestick":True,
+        "check_permit":True, # turn on bot permit related to daily risk stoppage
+        "daily_loss_margin": -0.02, # stop bot for a day if daily loss rated drops by this ammount
+        "daily_profit_margin": 0.01, # Start considering daily profit dropout at this
+        "daily_profit_stop_margin": 0.25, # Stop if daily profit margin was exceeded and then drop by this value
+        "validate_candlestick":True, # Turn on to validate the kline candlestick pattern before considering trade
         "invalid_candlestick_sleep":20,
-        "reject_candles": {
+        "reject_candles": { # candles to reject for trading
             "doji": True,
             "evening_star": True,
             "morning_star": True,
@@ -71,7 +72,7 @@ config = {
             "hammer": True,
             "inverted_hammer": True,
             "bearish_harami": True,
-            "Bullish_Harami": False,
+            "Bullish_Harami": False, # dont reject bullish patterns
             "Bearish_Engulfing": True,
             "Bullish_Engulfing": False,
             "bullish_reversal": True,
