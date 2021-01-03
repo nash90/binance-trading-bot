@@ -1,5 +1,5 @@
 # trading-bot
-The repository consist of binanace trading bots. There are two types of bot
+The repository consist of binance trading bots. There are two types of bot
 1. Kline trading bot
 2. 3 way arbitrage bot 
 
