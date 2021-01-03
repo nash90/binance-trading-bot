@@ -20,7 +20,7 @@ The task for the sample configuration is as follows
 * {"asset":"BTC", "exchange":"BTCUSDT", "min_limit":"0.005"} (Check BTC kline candle for trading (15 min order book used))
 
 #### Steps
-1. Make sure python and pipenv is installed
+1. Make sure python and pipenv is installed and run ```pipenv install```
 2. For above sample task, set configs/config.py as follows
 
 ```
@@ -107,7 +107,7 @@ ml_config = {
 ## 3 way arbitrage bot: 3 way trading rate based arbitrage bot
 ### how to run
 
-1. Make sure python and pipenv is installed
+1. Make sure python and pipenv is installed and run ```pipenv install```
 2. For above sample task, set configs/arbit_config.py as follows
 ```
 import os
