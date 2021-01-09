@@ -127,3 +127,5 @@ arbit_config = {
 ```
 3. From project root run ```pipenv run python arbi_script.py```
 
+## Some major reference 
+1. https://gist.github.com/sunilgug/711ca3ff2a6b482aa0ce61682c99adfa
