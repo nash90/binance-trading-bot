@@ -49,7 +49,7 @@ Y_VARIABLE = ["profit_flag"]
 DATA_PARTITION = 0.25
 
 MAX_ITER = 10000000
-HIDDEN_LAYER = (50, 50, 50)
+HIDDEN_LAYER = (100, 100, 100)
 MODEL_FILE = 'mlp_model.txt'
 SCALE_FILE = 'mlp_scale.txt'
 
@@ -66,9 +66,9 @@ PARAM_MLP = {
 def mlpClassifier(X_train, y_train):
   
   mlp = MLPClassifier(hidden_layer_sizes=HIDDEN_LAYER, max_iter=MAX_ITER)
-  #mlp = MLPClassifier(hidden_layer_sizes=(20,20,), max_iter=100000, alpha=1e-4,
-  #                    solver='adam', verbose=0, tol=1e-8, random_state=1,
-  #                    learning_rate_init=.01)
+  #mlp = MLPClassifier(hidden_layer_sizes=HIDDEN_LAYER, max_iter=MAX_ITER, alpha=1e-7,
+  #                    solver='sgd', verbose=0, tol=1e-8, random_state=1,
+  #                    learning_rate_init=0.01, learning_rate='adaptive')
   mlp.fit(X_train, y_train.values.ravel())
 
   return mlp
