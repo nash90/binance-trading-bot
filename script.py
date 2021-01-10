@@ -321,6 +321,7 @@ def start():
     orders = session.query(Order).filter(Order.bought_flag == True).filter(Order.sold_flag == False).all()
     
     order = None
+    # print('LOG: Number of orders found in DB', len(order))
     if len(orders) > 0:
         order = orders[0]
     
@@ -383,22 +384,27 @@ def start():
 
         prices = getPrices(exchange, bought_price, current_price)
 
-        price_order_stop_loss = prices.get("stop_loss")
+        if order.stop_price != None:
+            price_order_stop_loss = order.stop_price
+        else:
+            price_order_stop_loss = prices.get("stop_loss")
+
         price_profit_margin = prices.get("limit_profit")
         price_profit_stop_loss = prices.get("stop_limit_profit")
 
+        if current_price < price_order_stop_loss:
+            print(datetime.now(), "LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
+            executeStopLoss(exchange, quantity, order, prices)
+            if STOP_COUNT > 0:
+                run_count += 1
+            checkBotPermit()
+            time.sleep(LOSS_SLEEP)
+
+            
         if order.profit_sale_process_flag == False:
             print(datetime.now(), "LOG: Not Open Sale Stop loss Order ", prices)
             
-            if current_price < price_order_stop_loss:
-                print(datetime.now(), "LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
-                executeStopLoss(exchange, quantity, order, prices)
-                if STOP_COUNT > 0:
-                    run_count += 1
-                checkBotPermit()
-                time.sleep(LOSS_SLEEP)
-
-            elif current_price > price_profit_margin:
+            if current_price > price_profit_margin:
                 print(datetime.now(), "LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
                 stop_limit_profit = current_price - (current_price * stop_profit_rate)
                 #profit_sell_stop_limit = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
