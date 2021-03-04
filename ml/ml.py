@@ -1,6 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import aliased
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
@@ -10,6 +11,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import GridSearchCV
+import tensorflow as tf
+from tensorflow import keras
 
 
 from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
@@ -73,6 +76,17 @@ def mlpClassifier(X_train, y_train):
 
   return mlp
 
+def mlpClassifier2(X_train, y_train):
+  mlp =MLPClassifier(activation='relu', alpha=0.0001, batch_size='auto', beta_1=0.9,
+       beta_2=0.999, early_stopping=False, epsilon=1e-08,
+       hidden_layer_sizes=(100,), learning_rate='constant',
+       learning_rate_init=0.001, max_iter=10000, momentum=0.9,
+       n_iter_no_change=10, nesterovs_momentum=True, power_t=0.5,
+       random_state=None, shuffle=True, solver='adam', tol=0.0001,
+       validation_fraction=0.1, verbose=False, warm_start=False)
+  mlp.fit(X_train, y_train.values.ravel())
+  return mlp
+
 def bestMLPClassifier(X_train, y_train):
   mlp = MLPClassifier(max_iter=MAX_ITER)
   clf = GridSearchCV(mlp, PARAM_MLP)
@@ -93,7 +107,7 @@ def initNumericML(findBest = False):
     print("ML_LOG: Find best MLP")
     model = bestMLPClassifier(X_train, y_train)
   else:
-    model = mlpClassifier(X_train, y_train)
+    model = mlpClassifier2(X_train, y_train)
 
   predictions = model.predict(X_test)
 
@@ -105,7 +119,7 @@ def initNumericML(findBest = False):
   return model
 
 
-def initCategoricML():
+def initCategoricML(findBest = False):
   db_data = getCategoricData()
 
   formatted_data = arrangeCategoricalData(db_data)
@@ -114,8 +128,11 @@ def initCategoricML():
 
   [X_train, X_test, y_train, y_test] = dataProcessingForCategoricClassifier(ml_data)
 
-
-  model = mlpClassifier(X_train, y_train)
+  if findBest == True:
+    print("ML_LOG: Find best MLP")
+    model = bestMLPClassifier(X_train, y_train)
+  else:
+    model = mlpClassifier2(X_train, y_train)
 
   predictions = model.predict(X_test)
 
@@ -123,3 +140,124 @@ def initCategoricML():
   print(classification_report(y_test,predictions))
   return model
 
+
+def plotEpocs(clf):
+  import matplotlib.pyplot as plt
+  plt.title("Loss Curve")
+  plt.plot(clf.loss_curve_)
+  plt.xlabel("Iteration")
+  plt.ylabel("Loss")
+  plt.grid()
+  plt.show()
+
+def initTensor():
+  db_data = getNumericData()
+
+  formatted_data = arrangeNumericData(db_data)
+
+  ml_data = pd.DataFrame(formatted_data)
+
+  [X_train, X_test, y_train, y_test] = dataProcessingForNumericClassifier(ml_data)
+
+  model = tf.keras.models.Sequential([
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.2),
+    tf.keras.layers.Dense(10)
+  ])
+  loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+  model.compile(optimizer='adam',
+              loss=loss_fn,
+              metrics=["accuracy"])
+
+  model.fit(X_train, y_train, epochs=5000, class_weight={0:0.8, 1:1})
+
+  model.evaluate(X_test,  y_test, verbose=2)
+  predictions =  np.argmax(model.predict(X_test), axis=-1)
+  print(confusion_matrix(y_test,predictions))
+  print(classification_report(y_test,predictions))
+
+  return model
+
+
+def initCatTensor():
+  db_data = getCategoricData()
+
+  formatted_data = arrangeCategoricalData(db_data)
+
+  ml_data = pd.DataFrame(formatted_data)
+
+  [X_train, X_test, y_train, y_test] = dataProcessingForCategoricClassifier(ml_data)
+
+  model = tf.keras.models.Sequential([
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.2),
+    tf.keras.layers.Dense(10)
+  ])
+  loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+  model.compile(optimizer='adam',
+              loss=loss_fn,
+              metrics=["accuracy"])
+
+  model.fit(X_train, y_train, epochs=55 , class_weight={0:0.5, 1:1})
+
+  model.evaluate(X_test,  y_test, verbose=2)
+
+  return model
+
+def initTensor1():
+  db_data = getNumericData()
+
+  formatted_data = arrangeNumericData(db_data)
+
+  ml_data = pd.DataFrame(formatted_data)
+
+  [X_train, X_test, y_train, y_test] = dataProcessingForNumericClassifier(ml_data)
+  #counts = np.bincount(y_train[:, 0])
+  weight_for_0 = 1.0 / y_train[["profit_flag"]].value_counts()[0]
+  weight_for_1 = 1.0 / y_train[["profit_flag"]].value_counts()[1] 
+
+  model = keras.Sequential(
+    [
+        keras.layers.Dense(
+            256, activation="relu", input_shape=(X_train.shape[-1],)
+        ),
+        keras.layers.Dense(256, activation="relu"),
+        keras.layers.Dropout(0.3),
+        keras.layers.Dense(256, activation="relu"),
+        keras.layers.Dropout(0.3),
+        keras.layers.Dense(1, activation="sigmoid"),
+    ]
+  )
+
+  metrics = [
+    keras.metrics.FalseNegatives(name="fn"),
+    keras.metrics.FalsePositives(name="fp"),
+    keras.metrics.TrueNegatives(name="tn"),
+    keras.metrics.TruePositives(name="tp"),
+    keras.metrics.Precision(name="precision"),
+    keras.metrics.Recall(name="recall"),
+  ]
+
+  loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True) #"binary_crossentropy"
+  model.compile(
+    optimizer=keras.optimizers.Adam(1e-2), loss="binary_crossentropy", metrics=metrics
+  )
+
+  class_weight = {0:weight_for_0, 1:weight_for_1}
+  model.fit(
+    X_train,
+    y_train,
+    #batch_size=2048,
+    epochs=530,
+    verbose=2,
+    #callbacks=callbacks,
+    #validation_data=(X_test, y_test),
+    class_weight=class_weight,
+  )
+
+  model.evaluate(X_test,  y_test, verbose=2)
+  predictions =  np.argmax(model.predict(X_test), axis=-1)
+  print(confusion_matrix(y_test,predictions))
+  print(classification_report(y_test,predictions))
+
+  return model

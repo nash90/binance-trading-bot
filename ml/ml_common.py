@@ -72,13 +72,13 @@ def queryByDateAndCompletedOrder(session, date):
     ).all()
 
 valid_candle = [
- #"%Last_2_Negetives%",
+ "%Last_2_Negetives%",
  "%morning_star%",
- #"%hammer%",
+ "%hammer%",
  "%inverted_hammer%",
- #"%bearish_harami%",
+ "%bearish_harami%",
  "%Bullish_Engulfing%",
- #"%doji%"
+ "%doji%"
 ]
 
 def queryByDateAndCandles(session, date):
@@ -130,6 +130,15 @@ def arrangeNumericData(tupleList):
   return dictList
 
 
+def catQueryByDateAndCandles(session, date): 
+  return session.query(Order).filter(
+    Order.created_date >= date
+  ).filter(
+    Order.sold_cummulative_quote_qty.isnot(None)
+  ).filter(
+    or_(*[Order.candle_pattern0.like(item) for item in valid_candle
+  ])).all()
+  
 
 def getCategoricData():
   #data = session.query(Order).filter(Order.candle_pattern0.isnot(None)).all()
@@ -139,6 +148,7 @@ def getCategoricData():
   ).filter(
     Order.sold_cummulative_quote_qty.isnot(None)
   ).all()
+  #data = catQueryByDateAndCandles(session, datetime(2021, 1, 1))
   session.close()
   return data
 
