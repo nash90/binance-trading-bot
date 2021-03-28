@@ -13,6 +13,9 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import GridSearchCV
 import tensorflow as tf
 from tensorflow import keras
+#from keras.layers.advanced_activations import LeakyReLU
+from keras.models import Sequential
+from keras.layers import Dense
 
 
 from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
@@ -35,6 +38,7 @@ from util.utility import loadObject
 from ml_common import getNumericData
 from ml_common import arrangeNumericData
 from ml_common import dataProcessingForNumericClassifier
+from ml_common import dataProcessingForNumericClassifier2
 
 from ml_common import getCategoricData
 from ml_common import arrangeCategoricalData
@@ -65,6 +69,22 @@ PARAM_MLP = {
 }
 
 
+def getEqualSample(df):
+  nrows = len(df)
+  total_sample_size = 1e4
+  #df.groupby('profit_flag').\
+  #    apply(lambda x: x.sample(int((x.count()/nrows)*total_sample_size)))
+  #df.sample(n = 2000, weights = (df['profit_flag'].value_counts()/len(df['profit_flag']))**-1)
+
+  df_true = df[df['profit_flag'] == 1]
+  df_false = df[df['profit_flag'] == 0]
+  df_true = df_true.sample(1000)
+  df_false = df_false.sample(1000)
+  df = df_true.append(df_false)
+  df=df.sample(2000)
+  len(df)
+  
+  return df
 
 def mlpClassifier(X_train, y_train):
   
@@ -100,6 +120,7 @@ def initNumericML(findBest = False):
   formatted_data = arrangeNumericData(db_data)
 
   ml_data = pd.DataFrame(formatted_data)
+  ml_data = getEqualSample(ml_data)
 
   [X_train, X_test, y_train, y_test] = dataProcessingForNumericClassifier(ml_data)
 
@@ -125,6 +146,7 @@ def initCategoricML(findBest = False):
   formatted_data = arrangeCategoricalData(db_data)
 
   ml_data = pd.DataFrame(formatted_data)
+  ml_data = getEqualSample(ml_data)
 
   [X_train, X_test, y_train, y_test] = dataProcessingForCategoricClassifier(ml_data)
 
@@ -169,7 +191,7 @@ def initTensor():
               loss=loss_fn,
               metrics=["accuracy"])
 
-  model.fit(X_train, y_train, epochs=5000, class_weight={0:0.8, 1:1})
+  model.fit(X_train, y_train, epochs=500, class_weight={0:0.8, 1:1})
 
   model.evaluate(X_test,  y_test, verbose=2)
   predictions =  np.argmax(model.predict(X_test), axis=-1)
@@ -219,11 +241,11 @@ def initTensor1():
   model = keras.Sequential(
     [
         keras.layers.Dense(
-            256, activation="relu", input_shape=(X_train.shape[-1],)
+            10, activation="relu", input_shape=(X_train.shape[-1],)
         ),
-        keras.layers.Dense(256, activation="relu"),
+        keras.layers.Dense(10, activation="relu"),
         keras.layers.Dropout(0.3),
-        keras.layers.Dense(256, activation="relu"),
+        keras.layers.Dense(10, activation="relu"),
         keras.layers.Dropout(0.3),
         keras.layers.Dense(1, activation="sigmoid"),
     ]
@@ -240,7 +262,7 @@ def initTensor1():
 
   loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True) #"binary_crossentropy"
   model.compile(
-    optimizer=keras.optimizers.Adam(1e-2), loss="binary_crossentropy", metrics=metrics
+    optimizer=keras.optimizers.Adam(1e-2), loss="binary_crossentropy", metrics='binary_accuracy'
   )
 
   class_weight = {0:weight_for_0, 1:weight_for_1}
@@ -248,10 +270,10 @@ def initTensor1():
     X_train,
     y_train,
     #batch_size=2048,
-    epochs=530,
+    epochs=30,
     verbose=2,
     #callbacks=callbacks,
-    #validation_data=(X_test, y_test),
+    validation_data=(X_test, y_test),
     class_weight=class_weight,
   )
 
@@ -261,3 +283,108 @@ def initTensor1():
   print(classification_report(y_test,predictions))
 
   return model
+
+
+
+def initTensor2():
+  db_data = getNumericData()
+
+  formatted_data = arrangeNumericData(db_data)
+
+  ml_data = pd.DataFrame(formatted_data)
+  ml_data.to_csv('trade_data.csv', index=False)
+  ml_data = getEqualSample(ml_data)
+
+  [X_train, X_test, y_train, y_test] = dataProcessingForNumericClassifier2(ml_data)
+  #counts = np.bincount(y_train[:, 0])
+  weight_for_0 = 1.0 / y_train[["profit_flag"]].value_counts()[0]
+  weight_for_1 = 1.0 / y_train[["profit_flag"]].value_counts()[1] 
+
+  model = Sequential()
+
+  model.add(Dense(5, activation='relu', input_shape=(X_train.shape[-1],)))
+
+  model.add(Dense(5, activation='relu'))
+
+  model.add(Dense(1, activation='sigmoid'))
+
+  metrics = [
+    keras.metrics.FalseNegatives(name="fn"),
+    keras.metrics.FalsePositives(name="fp"),
+    keras.metrics.TrueNegatives(name="tn"),
+    keras.metrics.TruePositives(name="tp"),
+    keras.metrics.Precision(name="precision"),
+    keras.metrics.Recall(name="recall"),
+  ]
+
+  loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False) #"binary_crossentropy"
+  loss=tf.keras.losses.BinaryCrossentropy(from_logits=False)
+  sgd = keras.optimizers.SGD(lr=0.01, clipvalue=0.5)
+  model.compile(
+    optimizer=sgd,
+    metrics=['accuracy'],
+    loss=loss
+  )
+
+  class_weight = {0:weight_for_0, 1:weight_for_1}
+  model.fit(
+    X_train,
+    y_train,
+    #batch_size=2048,
+    epochs=30,
+    verbose=1,
+    #callbacks=callbacks,
+    #validation_data=(X_test, y_test),
+    #validation_steps=5,
+    class_weight=class_weight,
+  )
+
+  model.evaluate(X_test,  y_test, verbose=2)
+  predictions =  np.argmax(model.predict(X_test), axis=-1)
+  print(confusion_matrix(y_test,predictions))
+  print(classification_report(y_test,predictions))
+
+  return model
+
+def tensor3():
+  from pandas import read_csv
+  from keras.models import Sequential
+  from keras.layers import Dense
+  from keras.wrappers.scikit_learn import KerasClassifier
+  from sklearn.model_selection import cross_val_score
+  from sklearn.preprocessing import LabelEncoder
+  from sklearn.model_selection import StratifiedKFold
+  from sklearn.preprocessing import StandardScaler
+  from sklearn.pipeline import Pipeline
+  db_data = getNumericData()
+
+  formatted_data = arrangeNumericData(db_data)
+
+  ml_data = pd.DataFrame(formatted_data)
+
+  [X_train, X_test, y_train, y_test] = dataProcessingForNumericClassifier(ml_data)
+
+  # encode class values as integers
+  X = X_train
+  Y = y_train
+  encoder = LabelEncoder()
+  encoder.fit(y_train)
+  encoded_Y = encoder.transform(Y)
+  
+  # larger model
+  def create_larger():
+    # create model
+    model = Sequential()
+    model.add(Dense(20, input_dim=45, activation='relu'))
+    model.add(Dense(20, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+    # Compile model
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return model
+  estimators = []
+  estimators.append(('standardize', StandardScaler()))
+  estimators.append(('mlp', KerasClassifier(build_fn=create_larger, epochs=30, batch_size=5, verbose=0)))
+  pipeline = Pipeline(estimators)
+  kfold = StratifiedKFold(n_splits=10, shuffle=True)
+  results = cross_val_score(pipeline, X, encoded_Y, cv=kfold)
+  print("Larger: %.2f%% (%.2f%%)" % (results.mean()*100, results.std()*100))

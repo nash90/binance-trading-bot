@@ -56,6 +56,9 @@ from ml_common import arrangeCategoricalData
 from ml_common import dataProcessingForCategoricClassifier
 from ml_common import dataProcessingForDT
 
+from ml_common import getNumericData
+from ml_common import arrangeNumericData
+from ml_common import dataProcessingForNumericClassifier
 
 def DT(X_train, y_train):
   # Create Decision Tree classifer object
@@ -117,3 +120,20 @@ def drawGraph(clf):
   graph = pydotplus.graph_from_dot_data(dot_data.getvalue())  
   graph.write_png('tree.png')
   #Image(graph.create_png())
+
+def initDT2():
+  db_data = getNumericData()
+
+  formatted_data = arrangeNumericData(db_data)
+
+  ml_data = pd.DataFrame(formatted_data)
+
+  [X_train, X_test, y_train, y_test] = dataProcessingForNumericClassifier(ml_data)
+
+  model = DT(X_train, y_train)
+
+  predictions = model.predict(X_test)
+
+  print(confusion_matrix(y_test,predictions))
+  print(classification_report(y_test,predictions))
+  return model

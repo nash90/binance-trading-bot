@@ -52,6 +52,19 @@ def createNumericCandleDict(order, c0, c1, c2, c3, c4):
     new_dict["c4_Taker_Buy_Base_Asset_Volume"] = c4.Taker_Buy_Base_Asset_Volume
     new_dict["c4_Taker_Buy_Quote_Asset_Volume"] = c4.Taker_Buy_Quote_Asset_Volume 
 
+    new_dict["candle_pattern0"] = order.candle_pattern0
+    new_dict["candle_pattern1"] = order.candle_pattern1
+    new_dict["candle_pattern2"] = order.candle_pattern2
+    new_dict["candle_pattern3"] = order.candle_pattern3
+    new_dict["candle_pattern4"] = order.candle_pattern4
+    new_dict["created_date"] = order.created_date
+    new_dict["sold_cummulative_quote_qty"] = order.sold_cummulative_quote_qty
+    new_dict["buy_cummulative_quote_qty"] = order.buy_cummulative_quote_qty
+    new_dict["buy_price"] = order.price
+    new_dict["sell_price"] = order.marker_sell_price
+    new_dict["orig_quantity"] = order.orig_quantity
+    
+
     """
     if order != None:
       marker_sell_price = order.marker_sell_price
@@ -62,8 +75,8 @@ def createNumericCandleDict(order, c0, c1, c2, c3, c4):
       new_dict["profit_flag"] = profit_flag
     """
     if order != None:
-      net_sold = float(order.sold_cummulative_quote_qty) * 0.9995
-      net_buy = float(order.buy_cummulative_quote_qty) * 1.0005
+      net_sold = float(order.sold_cummulative_quote_qty) * 0.99925
+      net_buy = float(order.buy_cummulative_quote_qty) * 1.00075
       profit = (net_sold - net_buy)/ net_buy
       new_dict["profit"] = profit
       profit_flag = 1 if profit > 0 else 0

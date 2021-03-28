@@ -3,7 +3,7 @@ from sqlalchemy.orm import aliased
 from sqlalchemy import or_
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn import preprocessing
@@ -36,6 +36,20 @@ C3_NUM_VARIABLES = ["c3_Open", "c3_High", "c3_Low", "c3_Close", "c3_Volume", "c3
 C4_NUM_VARIABLES = ["c4_Open", "c4_High", "c4_Low", "c4_Close", "c4_Volume", "c4_Quote_Asset_Volume", "c4_Number_Of_Trades", "c4_Taker_Buy_Base_Asset_Volume", "c4_Taker_Buy_Quote_Asset_Volume" ]
 
 X_NUM_VARIABLES = C0_NUM_VARIABLES + C1_NUM_VARIABLES + C2_NUM_VARIABLES + C3_NUM_VARIABLES + C4_NUM_VARIABLES
+X_NUM_VARIABLES = [
+  "c0_Open", "c0_High", "c0_Low", "c0_Close",
+  "c1_Open", "c1_High", "c1_Low", "c1_Close",
+  "c2_Open", "c2_High", "c2_Low", "c2_Close",
+  "c3_Open", "c3_High", "c3_Low", "c3_Close",
+  "c4_Open", "c4_High", "c4_Low", "c4_Close"
+ ]
+X_NUM_VARIABLES = [
+  "c0_High_R", "c0_Low_R", "c0_Close_R",
+  "c1_High_R", "c1_Low_R", "c1_Close_R",
+  "c2_High_R", "c2_Low_R", "c2_Close_R",
+  "c3_High_R", "c3_Low_R", "c3_Close_R",
+  "c4_High_R", "c4_Low_R", "c4_Close_R",
+ ]
 X_CAT_VARIABLES = ["candle_pattern0", "candle_pattern1", "candle_pattern2", "candle_pattern3", "candle_pattern4"]
 Y_VARIABLE = ["profit_flag"]
 DATA_PARTITION = 0.25
@@ -177,8 +191,27 @@ def getTestData():
 
 
 def dataProcessingForNumericClassifier(ml_data):
+  ml_data["c0_High_R"] = (ml_data["c0_High"] - ml_data["c0_Open"])/ml_data["c0_Open"]
+  ml_data["c0_Low_R"] = (ml_data["c0_Low"] - ml_data["c0_Open"])/ml_data["c0_Open"]
+  ml_data["c0_Close_R"] = (ml_data["c0_Close"] - ml_data["c0_Open"])/ml_data["c0_Open"]
+  ml_data["c1_High_R"] = (ml_data["c1_High"] - ml_data["c1_Open"])/ml_data["c1_Open"]
+  ml_data["c1_Low_R"] = (ml_data["c1_Low"] - ml_data["c1_Open"])/ml_data["c1_Open"]
+  ml_data["c1_Close_R"] = (ml_data["c1_Close"] - ml_data["c1_Open"])/ml_data["c1_Open"]
+  ml_data["c2_High_R"] = (ml_data["c2_High"] - ml_data["c2_Open"])/ml_data["c2_Open"]
+  ml_data["c2_Low_R"] = (ml_data["c2_Low"] - ml_data["c2_Open"])/ml_data["c2_Open"]
+  ml_data["c2_Close_R"] = (ml_data["c2_Close"] - ml_data["c2_Open"])/ml_data["c2_Open"]
+  ml_data["c3_High_R"] = (ml_data["c3_High"] - ml_data["c3_Open"])/ml_data["c3_Open"]
+  ml_data["c3_Low_R"] = (ml_data["c3_Low"] - ml_data["c3_Open"])/ml_data["c3_Open"]
+  ml_data["c3_Close_R"] = (ml_data["c3_Close"] - ml_data["c3_Open"])/ml_data["c3_Open"]
+  ml_data["c4_High_R"] = (ml_data["c4_High"] - ml_data["c4_Open"])/ml_data["c4_Open"]
+  ml_data["c4_Low_R"] = (ml_data["c4_Low"] - ml_data["c4_Open"])/ml_data["c4_Open"]
+  ml_data["c4_Close_R"] = (ml_data["c4_Close"] - ml_data["c4_Open"])/ml_data["c4_Open"]
+
+
+
   X = ml_data[X_NUM_VARIABLES]
   y = ml_data[Y_VARIABLE]
+  print(X)
 
   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = DATA_PARTITION)
   
@@ -192,6 +225,38 @@ def dataProcessingForNumericClassifier(ml_data):
 
   return [X_train, X_test, y_train, y_test]
 
+def dataProcessingForNumericClassifier2(ml_data):
+  ml_data["c0_High_R"] = (ml_data["c0_High"] - ml_data["c0_Open"])/ml_data["c0_Open"]
+  ml_data["c0_Low_R"] = (ml_data["c0_Low"] - ml_data["c0_Open"])/ml_data["c0_Open"]
+  ml_data["c0_Close_R"] = (ml_data["c0_Close"] - ml_data["c0_Open"])/ml_data["c0_Open"]
+  ml_data["c1_High_R"] = (ml_data["c1_High"] - ml_data["c1_Open"])/ml_data["c1_Open"]
+  ml_data["c1_Low_R"] = (ml_data["c1_Low"] - ml_data["c1_Open"])/ml_data["c1_Open"]
+  ml_data["c1_Close_R"] = (ml_data["c1_Close"] - ml_data["c1_Open"])/ml_data["c1_Open"]
+  ml_data["c2_High_R"] = (ml_data["c2_High"] - ml_data["c2_Open"])/ml_data["c2_Open"]
+  ml_data["c2_Low_R"] = (ml_data["c2_Low"] - ml_data["c2_Open"])/ml_data["c2_Open"]
+  ml_data["c2_Close_R"] = (ml_data["c2_Close"] - ml_data["c2_Open"])/ml_data["c2_Open"]
+  ml_data["c3_High_R"] = (ml_data["c3_High"] - ml_data["c3_Open"])/ml_data["c3_Open"]
+  ml_data["c3_Low_R"] = (ml_data["c3_Low"] - ml_data["c3_Open"])/ml_data["c3_Open"]
+  ml_data["c3_Close_R"] = (ml_data["c3_Close"] - ml_data["c3_Open"])/ml_data["c3_Open"]
+  ml_data["c4_High_R"] = (ml_data["c4_High"] - ml_data["c4_Open"])/ml_data["c4_Open"]
+  ml_data["c4_Low_R"] = (ml_data["c4_Low"] - ml_data["c4_Open"])/ml_data["c4_Open"]
+  ml_data["c4_Close_R"] = (ml_data["c4_Close"] - ml_data["c4_Open"])/ml_data["c4_Open"]
+
+  X = ml_data[X_NUM_VARIABLES]
+  y = ml_data[Y_VARIABLE]
+  print(X)
+
+  X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = DATA_PARTITION)
+  
+  scaler = MinMaxScaler()
+  scaler.fit(X_train)
+
+  saveObject(scaler, SCALE_FILE)
+
+  X_train = scaler.transform(X_train)
+  X_test = scaler.transform(X_test)
+
+  return [X_train, X_test, y_train, y_test]
 
 def dataProcessingForCategoricClassifier(ml_data):
   X = ml_data[X_CAT_VARIABLES]
@@ -236,3 +301,9 @@ def dataProcessingForDT(ml_data):
 
   return [X_train, X_test, y_train, y_test]
 
+def getEqualSample(df):
+  nrows = len(df)
+  total_sample_size = 1e4
+  df.groupby('classes').\
+      apply(lambda x: x.sample(int((x.count()/nrows)*total_sample_size)))
+  return df

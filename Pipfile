@@ -12,6 +12,7 @@ sqlalchemy-utils = "*"
 psycopg2-binary = "*"
 pandas = "*"
 pylint = "*"
+joblib = "*"
 
 [requires]
 python_version = "3.7"
