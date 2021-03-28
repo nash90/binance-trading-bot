@@ -5,7 +5,7 @@ db_url = os.environ['PSQL_DB_HOST'] + ':5432/' + os.environ['PSQL_BINBOT_DB_NAME
 config = {
     "reset_db":False,
     "start_bot":True,
-    "mock_trade":False,    
+    "mock_trade":True,    
     "db":{
         "db_type":"postgresql",
         "file":"data.db",
@@ -30,11 +30,12 @@ config = {
     "loss_sleep": 300,
     "error_sleep":11,
     "bot_permit": {
-        "check_permit":True,
+        "check_permit":False,
         "daily_loss_margin": -0.02,
         "daily_profit_margin": 0.01,
         "daily_profit_stop_margin": 0.25,
         "validate_candlestick":True,
+        "validate_candle_rules": True,
         "invalid_candlestick_sleep":20,
         "reject_candles": {
             "doji": True,

@@ -28,6 +28,7 @@ FETCH_LENGTH = "1 day ago JST"
 LOG_ELEMENTS = ["Open_time_str", "Open", "Close", "candle_pattern", "candle_score", "candle_cumsum", "signal2"]
 INVALID_CANDLE_SLEEP = config.get("bot_permit").get("invalid_candlestick_sleep")
 VALIDATE_CANDLESTICK = config.get("bot_permit").get("validate_candlestick")
+VALIDATE_CANDLE_RULES = config.get("bot_permit").get("validate_candle_rules")
 
 DATETIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
 
@@ -305,7 +306,65 @@ def saveCandles(return_data):
   return return_data
 
 
+def runRulesValidations(latest_signals):
+  c0 = latest_signals.iloc[0]
+  c1 = latest_signals.iloc[1]
+  c2 = latest_signals.iloc[2]
+  c3 = latest_signals.iloc[3]
 
+  patterns = {}
+  patterns["pattern_1"] = ("Bearish_Engulfing" in c1.candle_pattern)
+  patterns["pattern_2"] = ("bearish_harami" in c1.candle_pattern)
+  patterns["pattern_3"] = ("inverted_hammer" in c1.candle_pattern)
+  patterns["pattern_4"] = ("Bullish_Harami" in c2.candle_pattern)
+  patterns["pattern_5"] = ("inverted_hammer" in c2.candle_pattern)
+  
+  valid_candle = patterns["pattern_1"] or patterns["pattern_2"] or patterns["pattern_3"] or patterns["pattern_4"] or patterns["pattern_5"]
+
+  if valid_candle == False:
+    print(datetime.now(), "KLINE_LOG: Candle validation Failed", patterns )
+    return False
+  else:
+    print(datetime.now(), "KLINE_LOG: Candle validation Passed", patterns )
+
+
+  rules = {}
+  rules["rule1_1"] = (c0.Taker_Buy_Quote_Asset_Volume) > 5582057.75
+  rules["rule1_2"] = (c3.Quote_Asset_Volume) > 84760696
+  rules["rule1_3"] = (c0.Volume) <= 1577.309
+  rules["rule1_4"] = (c3.Number_Of_Trades) <= 73378.0
+  rules["rule1_5"] = True
+
+  rules["rule2_1"] = (c2.Taker_Buy_Quote_Asset_Volume > 5308098.5)
+  rules["rule2_2"] = (c2.Number_Of_Trades) > 12675.5
+  rules["rule2_3"] = (c1.Taker_Buy_Base_Asset_Volume) <= 258.521
+  rules["rule2_4"] = (c1.Taker_Buy_Base_Asset_Volume) > 215.756
+  rules["rule2_5"] = (c2.Number_Of_Trades) <= 20337
+
+  valid_rule1 = (
+    rules["rule1_1"] and
+    rules["rule1_2"] and
+    rules["rule1_3"] and
+    rules["rule1_4"] and
+    rules["rule1_5"]
+  )
+
+  valid_rule2 = (
+    rules["rule2_1"] and
+    rules["rule2_2"] and
+    rules["rule2_3"] and
+    rules["rule2_4"] and
+    rules["rule2_5"]
+  )
+
+  print(datetime.now(), "KLINE_LOG: Rules validation detail log", rules )
+  #print(datetime.now(), "KLINE_LOG: Each Parent Rule Status log", valid_rule1, valid_rule2)
+
+  if valid_rule1 or valid_rule2:
+    print(datetime.now(), "KLINE_LOG: Rules validation success",valid_rule1, valid_rule2)
+    return True
+
+  return False
 
 def permitCandleStick():
   df = getCandleAndClassify()
@@ -317,6 +376,14 @@ def permitCandleStick():
   log_elements = latest_signals[LOG_ELEMENTS]
   log_elements = log_elements.to_dict('records')
   return_data = latest_signals.to_dict('records')
+
+  if VALIDATE_CANDLE_RULES == True:
+    print(datetime.now(),"KLINE_LOG: Latest Signals", return_data)
+    validPerRules = runRulesValidations(latest_signals)
+    if validPerRules == True:
+      return_data = saveCandles(return_data)
+      return [True, return_data]
+    return [False, return_data]
 
   if VALIDATE_CANDLESTICK == False:
     return_data = saveCandles(return_data)
