@@ -376,7 +376,7 @@ def runRulesValidations2(latest_signals):
   patterns["pattern_1"] = ("Bearish_Engulfing" in c1.candle_pattern)
   patterns["pattern_2"] = ("bearish_harami" in c1.candle_pattern)
   #patterns["pattern_3"] = ("inverted_hammer" in c1.candle_pattern)
-  patterns["pattern_3"] = True
+  patterns["pattern_3"] = False
   patterns["pattern_4"] = ("Bullish_Harami" in c2.candle_pattern)
   patterns["pattern_5"] = ("inverted_hammer" in c2.candle_pattern)
   
