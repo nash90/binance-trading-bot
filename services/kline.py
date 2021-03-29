@@ -392,7 +392,7 @@ def runRulesValidations2(latest_signals):
   rules = {}
   rules["rule1_1"] = (c0.Taker_Buy_Quote_Asset_Volume) <= 9521354
   rules["rule1_2"] = (c0.Number_Of_Trades) > 6994.5
-  rules["rule1_3"] = ~("inverted_hammer" in c1.candle_pattern)
+  rules["rule1_3"] = not ("inverted_hammer" in c1.candle_pattern)
   rules["rule1_4"] = (c2.Number_Of_Trades) > 10961.5
   rules["rule1_5"] = True
 
