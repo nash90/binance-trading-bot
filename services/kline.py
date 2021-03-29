@@ -366,6 +366,53 @@ def runRulesValidations(latest_signals):
 
   return False
 
+def runRulesValidations2(latest_signals):
+  c0 = latest_signals.iloc[0]
+  c1 = latest_signals.iloc[1]
+  c2 = latest_signals.iloc[2]
+  c3 = latest_signals.iloc[3]
+
+  patterns = {}
+  patterns["pattern_1"] = ("Bearish_Engulfing" in c1.candle_pattern)
+  patterns["pattern_2"] = ("bearish_harami" in c1.candle_pattern)
+  #patterns["pattern_3"] = ("inverted_hammer" in c1.candle_pattern)
+  patterns["pattern_3"] = True
+  patterns["pattern_4"] = ("Bullish_Harami" in c2.candle_pattern)
+  patterns["pattern_5"] = ("inverted_hammer" in c2.candle_pattern)
+  
+  valid_candle = patterns["pattern_1"] or patterns["pattern_2"] or patterns["pattern_3"] or patterns["pattern_4"] or patterns["pattern_5"]
+
+  if valid_candle == False:
+    print(datetime.now(), "KLINE_LOG: Candle validation Failed", patterns )
+    return False
+  else:
+    print(datetime.now(), "KLINE_LOG: Candle validation Passed", patterns )
+
+
+  rules = {}
+  rules["rule1_1"] = (c0.Taker_Buy_Quote_Asset_Volume) <= 9521354
+  rules["rule1_2"] = (c0.Number_Of_Trades) > 6994.5
+  rules["rule1_3"] = ~("inverted_hammer" in c1.candle_pattern)
+  rules["rule1_4"] = (c2.Number_Of_Trades) > 10961.5
+  rules["rule1_5"] = True
+
+  valid_rule1 = (
+    rules["rule1_1"] and
+    rules["rule1_2"] and
+    rules["rule1_3"] and
+    rules["rule1_4"] and
+    rules["rule1_5"]
+  )
+
+  print(datetime.now(), "KLINE_LOG: Rules validation detail log", rules )
+  #print(datetime.now(), "KLINE_LOG: Each Parent Rule Status log", valid_rule1, valid_rule2)
+
+  if valid_rule1:
+    print(datetime.now(), "KLINE_LOG: Rules validation success",valid_rule1)
+    return True
+
+  return False
+
 def permitCandleStick():
   df = getCandleAndClassify()
 
@@ -379,7 +426,7 @@ def permitCandleStick():
 
   if VALIDATE_CANDLE_RULES == True:
     print(datetime.now(),"KLINE_LOG: Latest Signals", return_data)
-    validPerRules = runRulesValidations(latest_signals)
+    validPerRules = runRulesValidations2(latest_signals)
     if validPerRules == True:
       return_data = saveCandles(return_data)
       return [True, return_data]
