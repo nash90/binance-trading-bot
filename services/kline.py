@@ -426,7 +426,7 @@ def permitCandleStick():
 
   if VALIDATE_CANDLE_RULES == True:
     print(datetime.now(),"KLINE_LOG: Latest Signals", return_data)
-    validPerRules = runRulesValidations2(latest_signals)
+    validPerRules = runRulesValidations(latest_signals)
     if validPerRules == True:
       return_data = saveCandles(return_data)
       return [True, return_data]
