@@ -52,21 +52,23 @@ def createTableIfNotExit():
     return Base.metadata.create_all(engine)
 createTableIfNotExit()
 
-
-if config["use_db_config"] == True:
-    db_config = session.query(TradeConfig).get(1)
-    if db_config != None:
-        db_buy_price = db_config.buy_price
-        db_sell_price = db_config.stop_loss_price
-        stop_loss_rate = db_config.stop_loss_rate
-        profit_rate = db_config.profit_rate
-        stop_profit_rate = db_config.profit_stop_loss_rate
-        STOP_COUNT = db_config.stop_script
-        BOT_FREQUENCY = db_config.bot_freqency
-        PROFIT_SLEEP = db_config.profit_sleep
-        LOSS_SLEEP = db_config.loss_sleep
-        ERROR_SLEEP = db_config.error_sleep
-        MOCK_TRADE = db_config.mock_trade
+def getConfigFromDB():
+    global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate
+    global STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
+    if config["use_db_config"] == True:
+        db_config = session.query(TradeConfig).get(1)
+        if db_config != None:
+            db_buy_price = db_config.buy_price
+            db_sell_price = db_config.stop_loss_price
+            stop_loss_rate = db_config.stop_loss_rate
+            profit_rate = db_config.profit_rate
+            stop_profit_rate = db_config.profit_stop_loss_rate
+            STOP_COUNT = db_config.stop_script
+            BOT_FREQUENCY = db_config.bot_freqency
+            PROFIT_SLEEP = db_config.profit_sleep
+            LOSS_SLEEP = db_config.loss_sleep
+            ERROR_SLEEP = db_config.error_sleep
+            MOCK_TRADE = db_config.mock_trade
 
 def setDBLogging():
     logging.basicConfig()
@@ -487,6 +489,7 @@ def runBatch():
         session.query(Order).filter(Order.sold_flag==False).update({Order.sold_flag:True})
 
     while run:
+        getConfigFromDB()
         if STOP_COUNT > 0 and run_count > STOP_COUNT:
             run = False
             print(datetime.now(), "LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
