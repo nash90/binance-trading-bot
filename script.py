@@ -397,7 +397,7 @@ def start():
         [validated, latest_candels] = permitCandleStick()
         # If fixed buy price set, buy and return
         if db_buy_price != None and current_price < db_buy_price:
-            print(datetime.now(),"LOG: DB BUY Price Set, Buying at fixed price")
+            print(datetime.now(),"LOG: DB BUY Price Set, Buying at fixed price", db_buy_price)
             createFreshOrder(exchange, current_price, latest_candels)
             return
 
@@ -422,7 +422,7 @@ def start():
 
         # If fixed sell price set, sell and return
         if db_sell_price != None and current_price > db_sell_price:
-            print(datetime.now(),"LOG: DB Sell Price Set, Selling at fixed price")
+            print(datetime.now(),"LOG: DB Sell Price Set, Selling at fixed price", db_sell_price)
             doSell(exchange, quantity, order, prices)
             return
 
