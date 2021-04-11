@@ -14,6 +14,7 @@ from models.base import Base
 from models.base import engine
 from models.base import Session
 from models.models import Order
+from models.models import TradeConfig
 from models.mock import getMarketBuyMock
 from models.mock import getMarketSellMock
 from services.service import checkBotPermit
@@ -29,10 +30,9 @@ client = Client(api_key, api_secret)
 
 crypto_list = config["crypto_list"]
 stop_loss_rate = config["stop_loss"]
-stop_loss = 10
+# stop_loss = 10
 profit_rate = config["profit_rate"]
 stop_profit_rate = config["stop_profit_rate"]
-stop_profit = 0
 run_count = 1
 STOP_COUNT = config.get("stop_script")
 BOT_FREQUENCY = config.get("bot_freqency")
@@ -48,14 +48,29 @@ MOCK_TRADE = config.get("mock_trade")
 session = Session()
 # APP constants
 
-def setDBLogging():
-    logging.basicConfig()
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-
-
 def createTableIfNotExit():
     return Base.metadata.create_all(engine)
 createTableIfNotExit()
+
+
+if config["use_db_config"] == True:
+    db_config = session.query(TradeConfig).get(1)
+    if db_config != None:
+        db_buy_price = db_config.buy_price
+        db_sell_price = db_config.stop_loss_price
+        stop_loss_rate = db_config.stop_loss_rate
+        profit_rate = db_config.profit_rate
+        stop_profit_rate = db_config.profit_stop_loss_rate
+        STOP_COUNT = db_config.stop_script
+        BOT_FREQUENCY = db_config.bot_freqency
+        PROFIT_SLEEP = db_config.profit_sleep
+        LOSS_SLEEP = db_config.loss_sleep
+        ERROR_SLEEP = db_config.error_sleep
+        MOCK_TRADE = db_config.mock_trade
+
+def setDBLogging():
+    logging.basicConfig()
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 def getMyAsset(assetName="BTC"):
     asset = client.get_asset_balance(asset=assetName)
@@ -347,6 +362,12 @@ def validateMLTrade(latest_candels, validated):
             validated = True
     return validated
 
+def doSell(exchange, quantity, order, prices):
+    executeStopLoss(exchange, quantity, order, prices)
+    if STOP_COUNT > 0:
+        run_count += 1
+    checkBotPermit()
+    time.sleep(LOSS_SLEEP)
 
 def start():
     #print("LOG: New Cycle)
@@ -372,6 +393,12 @@ def start():
         validated = True
         latest_candels = []
         [validated, latest_candels] = permitCandleStick()
+        # If fixed buy price set, buy and return
+        if db_buy_price != None and current_price < db_buy_price:
+            print(datetime.now(),"LOG: DB BUY Price Set, Buying at fixed price")
+            createFreshOrder(exchange, current_price, latest_candels)
+            return
+
         if validated == True and ml_config.get("enable_ml_trade") == True:
             validated = validateMLTrade(latest_candels, validated)
 
@@ -390,6 +417,12 @@ def start():
         price_order_stop_loss = prices.get("stop_loss")
         price_profit_margin = prices.get("limit_profit")
         price_profit_stop_loss = prices.get("stop_limit_profit")
+
+        # If fixed sell price set, sell and return
+        if db_sell_price != None and current_price > db_sell_price:
+            print(datetime.now(),"LOG: DB Sell Price Set, Selling at fixed price")
+            doSell(exchange, quantity, order, prices)
+            return
 
         if order.profit_sale_process_flag == False:
             print(datetime.now(), "LOG: Not Open Sale Stop loss Order ", prices)

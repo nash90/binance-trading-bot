@@ -3,6 +3,7 @@ import os
 db_url = os.environ['PSQL_DB_HOST'] + ':5432/' + os.environ['PSQL_BINBOT_DB_NAME']
 
 config = {
+    "use_db_config":True,
     "reset_db":False,
     "start_bot":True,
     "mock_trade":True,    

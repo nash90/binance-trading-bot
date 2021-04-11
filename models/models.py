@@ -128,3 +128,27 @@ class Trade_Arbi(Base):
   returned_quantity = Column('returned_quantity', Numeric)
   predicted_profit_rate = Column('predicted_profit_rate', Numeric)
   trade_log = Column('trade_log', String(500), default="")
+
+class TradeConfig(Base):
+  __tablename__ = 'trade_config'
+  __table_args__ = {'extend_existing': True}
+  id = Column('id', BigInteger, primary_key=True)
+  buy_price = Column('buy_price', Numeric(asdecimal=False))
+  stop_loss_price = Column('stop_loss_price', Numeric(asdecimal=False))
+  stop_loss_rate = Column('stop_loss_rate', Numeric(asdecimal=False), default=0.0035)
+  profit_rate = Column('profit_rate', Numeric(asdecimal=False), default=0.0045)
+  profit_stop_loss_rate = Column('profit_stop_loss_rate', Numeric(asdecimal=False), default=0.0015)
+  stop_script = Column('stop_script', Numeric(asdecimal=False), default=0)
+  principle_amount = Column('principle_amount', Numeric(asdecimal=False), default=100)
+  mock_trade = Column('mock_trade', Boolean, default=True)
+  root_asset = Column('root_asset', String(500), default="USDT")
+  bot_freqency = Column('bot_freqency', Numeric(asdecimal=False), default=6)
+  profit_sleep = Column('profit_sleep', Numeric(asdecimal=False), default=150)
+  loss_sleep = Column('loss_sleep', Numeric(asdecimal=False), default=300)
+  error_sleep = Column('error_sleep', Numeric(asdecimal=False), default=11)
+  daily_pause_permit = Column('daily_pause_permit', Boolean, default=False)
+  daily_loss_margin = Column('daily_loss_margin', Numeric(asdecimal=False), default=-0.02)
+  daily_profit_margin = Column('daily_profit_margin', Numeric(asdecimal=False), default=0.01)
+  daily_profit_stop_margin = Column('daily_profit_stop_margin', Numeric(asdecimal=False), default=0.25)
+  validate_candlestick = Column('validate_candlestick', Boolean, default=True)
+  invalid_candlestick_sleep = Column('invalid_candlestick_sleep', Numeric(asdecimal=False), default=20)
