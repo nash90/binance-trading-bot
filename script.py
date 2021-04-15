@@ -44,6 +44,8 @@ MAX_LOSS_PROBA = ml_config.get("max_loss_probablity")
 CHECK_PROFITABLE_PREDICTION = ml_config.get("check_profitable_prediction")
 CHECK_LOSS_PREDICTION = ml_config.get("check_loss_prediction")
 MOCK_TRADE = config.get("mock_trade")
+PAUSE_BUY = False
+PAUSE_SELL = False
 
 session = Session()
 # APP constants
@@ -55,6 +57,7 @@ createTableIfNotExit()
 def getConfigFromDB():
     global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate
     global STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
+    global PAUSE_BUY, PAUSE_SELL
     if config["use_db_config"] == True:
         db_config = session.query(TradeConfig).get(1)
         if db_config != None:
@@ -69,6 +72,8 @@ def getConfigFromDB():
             LOSS_SLEEP = db_config.loss_sleep
             ERROR_SLEEP = db_config.error_sleep
             MOCK_TRADE = db_config.mock_trade
+            PAUSE_BUY = db_config.pause_buy
+            PAUSE_SELL = db_config.pause_sell 
 
 def setDBLogging():
     logging.basicConfig()
@@ -391,6 +396,9 @@ def start():
     ###################
 
     if order == None:
+        if PAUSE_BUY:
+            print(datetime.now(), "LOG: Pause Buy Flag is ON!!!", current_price)
+            return
         print(datetime.now(), "LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
         validated = True
         latest_candels = []
@@ -410,6 +418,9 @@ def start():
 
     else:
         print(datetime.now(), "LOG: An Asset to Sell is Found", current_price, order.id)
+        if PAUSE_SELL:
+            print(datetime.now(), "LOG: Pause Sell Flag is ON!!!")
+            return
         bought_price = order.price
         quantity = round(order.executed_quantity,6)
         order_id = order.order_id

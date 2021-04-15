@@ -152,3 +152,5 @@ class TradeConfig(Base):
   daily_profit_stop_margin = Column('daily_profit_stop_margin', Numeric(asdecimal=False), default=0.25)
   validate_candlestick = Column('validate_candlestick', Boolean, default=True)
   invalid_candlestick_sleep = Column('invalid_candlestick_sleep', Numeric(asdecimal=False), default=20)
+  pause_buy = Column('pause_buy', Boolean, default=True)
+  pause_sell = Column('pause_sell', Boolean, default=True)
