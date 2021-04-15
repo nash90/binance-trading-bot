@@ -311,16 +311,27 @@ def runRulesValidations(latest_signals):
   c1 = latest_signals.iloc[1]
   c2 = latest_signals.iloc[2]
   c3 = latest_signals.iloc[3]
-
+  now = datetime.now()
+  minute = now.minute
   patterns = {}
-  patterns["pattern_1"] = ("Bearish_Engulfing" in c1.candle_pattern)
-  patterns["pattern_2"] = ("bearish_harami" in c1.candle_pattern)
-  patterns["pattern_3"] = ("inverted_hammer" in c1.candle_pattern)
-  patterns["pattern_4"] = ("Bullish_Harami" in c2.candle_pattern)
-  patterns["pattern_5"] = ("inverted_hammer" in c2.candle_pattern)
+ # patterns["pattern_1"] = ("Bearish_Engulfing" in c1.candle_pattern)
+ # patterns["pattern_2"] = ("bearish_harami" in c1.candle_pattern)
+ # patterns["pattern_3"] = ("inverted_hammer" in c1.candle_pattern)
+ # patterns["pattern_4"] = ("Bullish_Harami" in c2.candle_pattern)
+ # patterns["pattern_5"] = ("inverted_hammer" in c2.candle_pattern)
   
-  valid_candle = patterns["pattern_1"] or patterns["pattern_2"] or patterns["pattern_3"] or patterns["pattern_4"] or patterns["pattern_5"]
-
+  patterns["pattern_1"] = ("Bullish_Harami" in c0.candle_pattern)
+  # patterns["pattern_2"] = ("Bearish_Engulfing" in c1.candle_pattern)
+  # patterns["pattern_2"] = c2.Close < c1.Close
+  # patterns["pattern_3"] = ("bearish_harami" in c3.candle_pattern)
+  #patterns["pattern_3"] = c1.Close < c0.Close
+  patterns["pattern_2"] = (minute%15) > 9
+  patterns["pattern_3"] = True
+  patterns["pattern_4"] = True
+  patterns["pattern_5"] = True
+ 
+  #valid_candle = patterns["pattern_1"] or patterns["pattern_2"] or patterns["pattern_3"] or patterns["pattern_4"] or patterns["pattern_5"]
+  valid_candle = patterns["pattern_1"] and patterns["pattern_2"] and patterns["pattern_3"] and patterns["pattern_4"] and patterns["pattern_5"]
   if valid_candle == False:
     print(datetime.now(), "KLINE_LOG: Candle validation Failed", patterns )
     return False
@@ -360,7 +371,7 @@ def runRulesValidations(latest_signals):
   print(datetime.now(), "KLINE_LOG: Rules validation detail log", rules )
   #print(datetime.now(), "KLINE_LOG: Each Parent Rule Status log", valid_rule1, valid_rule2)
 
-  if valid_rule1 or valid_rule2:
+  if valid_rule1 or valid_rule2 or True:
     print(datetime.now(), "KLINE_LOG: Rules validation success",valid_rule1, valid_rule2)
     return True
 
