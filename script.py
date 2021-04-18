@@ -374,7 +374,6 @@ def doSell(exchange, quantity, order, prices):
     if STOP_COUNT > 0:
         run_count += 1
     checkBotPermit()
-    time.sleep(LOSS_SLEEP)
 
 def start():
     #print("LOG: New Cycle)
@@ -435,6 +434,7 @@ def start():
         if db_sell_price != None and current_price > db_sell_price:
             print(datetime.now(),"LOG: DB Sell Price Set, Selling at fixed price", db_sell_price)
             doSell(exchange, quantity, order, prices)
+            time.sleep(PROFIT_SLEEP)
             return
 
         if order.profit_sale_process_flag == False:
@@ -442,10 +442,7 @@ def start():
             
             if current_price < price_order_stop_loss:
                 print(datetime.now(), "LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
-                executeStopLoss(exchange, quantity, order, prices)
-                if STOP_COUNT > 0:
-                    run_count += 1
-                checkBotPermit()
+                doSell(exchange, quantity, order, prices)
                 time.sleep(LOSS_SLEEP)
 
             elif current_price > price_profit_margin:
@@ -480,10 +477,7 @@ def start():
                 #cancel_order =cancelOrder(exchange, order_id)
                 #time.sleep(5)
                 print(datetime.now(), "LOG: Time to cash out .........", prices)
-                executeStopLoss(exchange, quantity, order, prices)
-                if STOP_COUNT > 0:
-                    run_count += 1
-                checkBotPermit()
+                doSell(exchange, quantity, order, prices)
                 time.sleep(PROFIT_SLEEP)
 
 
