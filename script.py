@@ -5,6 +5,7 @@ import json
 import requests
 import pandas as pd
 import binance
+import math
 
 from binance.client import Client
 from binance.enums import *
