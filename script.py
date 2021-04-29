@@ -413,7 +413,7 @@ def start():
         print(datetime.now(), "LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
         validated = True
         latest_candels = []
-        [validated, latest_candels] = permitCandleStick()
+        [validated, latest_candels] = permitCandleStick(exchange)
         # If fixed buy price set, buy and return
         if db_buy_price != None and current_price < db_buy_price:
             print(datetime.now(),"LOG: DB BUY Price Set, Buying at fixed price", db_buy_price)
