@@ -4,6 +4,7 @@ import logging
 import json
 import requests
 import pandas as pd
+import math
 
 from binance.client import Client
 from binance.enums import *
