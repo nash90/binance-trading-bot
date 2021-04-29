@@ -82,6 +82,60 @@ def setDBLogging():
     logging.basicConfig()
     logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
+def getFloor(num, places):
+  
+  floor = ((math.floor(num * (10 ** places))) / (10 ** places))
+  return floor
+
+def roundAssetAmount(amount=0, symbol=''):
+  amount = float(amount)
+
+  if symbol == 'ADABNB':
+    return getFloor(amount, 0)
+  elif symbol == 'ADAUSDT':
+    return getFloor(amount, 1)
+  elif symbol == 'BTCUSDT':
+    return getFloor(amount, 6)
+  elif symbol == 'BNBETH':
+    return getFloor(amount, 2) 
+  elif symbol == 'BNBUSDT':
+    return getFloor(amount, 3)
+  elif symbol == 'BNBBTC':
+    return getFloor(amount, 2)
+  elif symbol == 'BNBEUR':
+    return getFloor(amount, 3)        
+  elif symbol == 'ETHBTC':
+    return getFloor(amount, 3)
+  elif symbol == 'ETHUSDT':
+    return getFloor(amount, 5)
+  elif symbol == 'EURUSDT':
+    return getFloor(amount, 2)
+  elif symbol == 'LINKETH':
+    return getFloor(amount, 2)
+  elif symbol == 'LINKUSDT':
+    return getFloor(amount, 2)
+  elif symbol == 'LINKBTC':
+    return getFloor(amount, 1)          
+  elif symbol == 'TRXXRP':
+    return getFloor(amount, 1)
+  elif symbol == 'TRXUSDT':
+    return getFloor(amount, 1)         
+  elif symbol == 'XRPUSDT':
+    return getFloor(amount, 1)
+  elif symbol == 'XRPBNB':
+    return getFloor(amount, 1) 
+
+  return getFloor(amount, 6)
+
+def roundAssetPrice(amount=0, symbol=''):
+    amount = float(amount)
+    if symbol == 'BTCUSDT':
+        return round(amount, 2)
+    elif symbol == 'DOGEUSDT':
+        return round(amount, 6)
+
+    return round(amount, 2)
+
 def getMyAsset(assetName="BTC"):
     asset = client.get_asset_balance(asset=assetName)
     print("getMyAsset: " + assetName +" : "+ json.dumps(asset))
@@ -258,7 +312,7 @@ my_portfolio = getMyPortfolio(crypto_list)
 
 total_root_asset = config.get("principle_amount") # test purpose
 buy_size = total_root_asset / len(crypto_list)
-buy_size = round(buy_size, 4)
+buy_size = roundAssetAmount(buy_size, exchange)
 
 
 def executeStopLoss(exchange, quantity, order, prices):
@@ -272,11 +326,11 @@ def executeStopLoss(exchange, quantity, order, prices):
     order.all_prices = json.dumps(prices)
     order.sold_cummulative_quote_qty = sold.get("cummulativeQuoteQty")
 
-    price_ms = round(float(sold.get("price")), 2)
+    price_ms = roundAssetPrice(float(sold.get("price")), exchange)
     fills = sold.get("fills")
     if len(fills) > 0:
         price_ms = float(fills[0]["price"])
-        price_ms = round(price_ms, 2)
+        price_ms = roundAssetPrice(price_ms, exchange)
     order.marker_sell_price = price_ms
 
     sessionCommit()   
@@ -284,18 +338,18 @@ def executeStopLoss(exchange, quantity, order, prices):
 
 def createFreshOrder(exchange, current_price, latest_candels):
     ammount = buy_size / current_price
-    ammount = round(ammount, 6)
+    ammount = roundAssetAmount(ammount, exchange)
 
     if MOCK_TRADE == True:
         new_order = getMarketBuyMock("BTCUSDT", current_price, ammount, ammount, buy_size)
     else:
         new_order = marketBuy(exchange, ammount)  
  
-    price_mb = round(float(new_order.get("price")), 2)
+    price_mb = roundAssetPrice(float(new_order.get("price")), exchange)
     fills = new_order.get("fills")
     if len(fills) > 0:
         price_mb = float(fills[0]["price"])
-        price_mb = round(price_mb, 2)
+        price_mb = roundAssetPrice(price_mb, exchange)
     candle0 = latest_candels[0].get("id")
     candle1 = latest_candels[1].get("id")
     candle2 = latest_candels[2].get("id")
@@ -314,8 +368,8 @@ def createFreshOrder(exchange, current_price, latest_candels):
         side = new_order.get("side"),
         type=new_order.get("type"),
         price= price_mb,
-        orig_quantity=round(float(new_order.get("origQty")),6),
-        executed_quantity=round(float(new_order.get("executedQty")),6),
+        orig_quantity=roundAssetAmount(float(new_order.get("origQty")),exchange),
+        executed_quantity=roundAssetAmount(float(new_order.get("executedQty")),exchange),
         server_side_status= new_order.get("status"),
         bought_flag=True,
         fills = json.dumps(fills)[:499],
@@ -434,7 +488,7 @@ def start():
             print(datetime.now(), "LOG: Pause Sell Flag is ON!!!")
             return
         bought_price = order.price
-        quantity = round(order.executed_quantity,6)
+        quantity = roundAssetAmount(order.executed_quantity,exchange)
         order_id = order.order_id
 
         prices = getPrices(exchange, bought_price, current_price)
@@ -461,7 +515,7 @@ def start():
             elif current_price > price_profit_margin:
                 print(datetime.now(), "LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
                 stop_limit_profit = current_price - (current_price * stop_profit_rate)
-                #profit_sell_stop_limit = setStopLoss(exchange, quantity, round(stop_limit_profit,2))
+                #profit_sell_stop_limit = setStopLoss(exchange, quantity, roundAssetPrice(stop_limit_profit,exchange))
                 #order.profit_sale_txn_id = profit_sell_stop_limit.get("orderId")
                 #order.profit_sale_stop_loss_price = profit_sell_stop_limit.get("price")
                 order.profit_sale_stop_loss_price = stop_limit_profit ## bot handles stop loss instead of server
