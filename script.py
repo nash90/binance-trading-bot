@@ -57,7 +57,7 @@ createTableIfNotExit()
 def getConfigFromDB():
     global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate
     global STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
-    global PAUSE_BUY, PAUSE_SELL
+    global PAUSE_BUY, PAUSE_SELL, TRADE_ASSET, TRADE_EXCHANGE
     if config["use_db_config"] == True:
         db_config = session.query(TradeConfig).get(1)
         if db_config != None:
@@ -384,6 +384,7 @@ def getTradeAssetInfo():
 
     if TRADE_ASSET != None and TRADE_ASSET != "":
         asset["asset"] = TRADE_ASSET
+    print(datetime.now(), "LOG: current asset and exchange: ", TRADE_ASSET, TRADE_EXCHANGE)
     return asset
 
 def start():
