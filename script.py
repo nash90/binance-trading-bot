@@ -312,7 +312,7 @@ my_portfolio = getMyPortfolio(crypto_list)
 
 total_root_asset = config.get("principle_amount") # test purpose
 buy_size = total_root_asset / len(crypto_list)
-buy_size = roundAssetAmount(buy_size, exchange)
+buy_size = roundAssetAmount(buy_size, "")
 
 
 def executeStopLoss(exchange, quantity, order, prices):
