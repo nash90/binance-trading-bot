@@ -437,8 +437,8 @@ def runRulesValidations3(latest_signals):
     return True
 
 
-def permitCandleStick():
-  df = getCandleAndClassify()
+def permitCandleStick(exchange):
+  df = getCandleAndClassify(exchange)
 
   latest_signals = df.nlargest(5,"Open_time")
   current = latest_signals.iloc[0]
