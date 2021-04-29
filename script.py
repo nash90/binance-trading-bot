@@ -75,6 +75,8 @@ def getConfigFromDB():
             MOCK_TRADE = db_config.mock_trade
             PAUSE_BUY = db_config.pause_buy
             PAUSE_SELL = db_config.pause_sell 
+            TRADE_ASSET = db_config.trade_asset
+            TRADE_EXCHANGE = db_config.trade_exchange
 
 def setDBLogging():
     logging.basicConfig()
@@ -262,7 +264,7 @@ buy_size = round(buy_size, 4)
 def executeStopLoss(exchange, quantity, order, prices):
 
     if MOCK_TRADE == True:
-        sold = getMarketSellMock("BTCUSDT", prices["current_price"], quantity, quantity, buy_size)
+        sold = getMarketSellMock(exchange, prices["current_price"], quantity, quantity, buy_size)
     else:
         sold = marketSell(exchange, quantity)
     order.market_sell_txn_id = sold.get("orderId")
@@ -376,10 +378,19 @@ def doSell(exchange, quantity, order, prices):
         run_count += 1
     checkBotPermit()
 
+def getTradeAssetInfo():
+    asset = crypto_list[0]
+    if TRADE_EXCHANGE != None and TRADE_EXCHANGE != "":
+        asset["exchange"] = TRADE_EXCHANGE
+
+    if TRADE_ASSET != None and TRADE_ASSET != "":
+        asset["asset"] = TRADE_ASSET
+    return asset
+
 def start():
     #print("LOG: New Cycle)
     global run_count
-    asset = crypto_list[0]
+    asset = getTradeAssetInfo()
     exchange = asset["exchange"]
 
     ## get order of unsold asset from DB
