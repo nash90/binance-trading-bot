@@ -4,6 +4,7 @@ import logging
 import json
 import requests
 import pandas as pd
+import binance
 
 from binance.client import Client
 from binance.enums import *
@@ -502,7 +503,7 @@ def runBatch():
 
         try:
             start()
-        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
+        except (binance.exceptions.BinanceAPIException, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
             print(datetime.now(), "Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
             time.sleep(ERROR_SLEEP)
 
