@@ -11,6 +11,7 @@ class Order(Base):
   client_order_id = Column('client_order_id', String(50), default="")
   transact_time = Column('transact_time', BigInteger)
   created_date = Column(DateTime, default=datetime.now())
+  completed_date = Column(DateTime)
   server_side_status = Column('server_side_status', String(10), default="")
   symbol = Column('symbol', String(10), default="")
   type = Column('type', String(50), default="")

@@ -326,6 +326,7 @@ def executeStopLoss(exchange, quantity, order, prices):
     order.sold_flag = True
     order.all_prices = json.dumps(prices)
     order.sold_cummulative_quote_qty = sold.get("cummulativeQuoteQty")
+    order.completed_date = datetime.now()
 
     price_ms = roundAssetPrice(float(sold.get("price")), exchange)
     fills = sold.get("fills")
