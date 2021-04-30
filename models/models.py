@@ -161,3 +161,8 @@ class TradeConfig(Base):
   trade_exchange2 = Column('trade_exchange2', String(50), default="BTCUSDT")
   trade_asset3 = Column('trade_asset3', String(50), default="BTC")
   trade_exchange3 = Column('trade_exchange3', String(50), default="BTCUSDT")
+  valid_pattern1 = Column(String(200))
+  valid_pattern2 = Column(String(200))
+  valid_pattern3 = Column(String(200))
+  valid_pattern4 = Column(String(200))
+  valid_pattern5 = Column(String(200))

@@ -63,11 +63,12 @@ createTableIfNotExit()
 
 def getConfigFromDB():
     global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate
-    global STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
+    global DB_CONFIG, STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
     global PAUSE_BUY, PAUSE_SELL, TRADE_ASSET, TRADE_EXCHANGE, TRADE_ASSET2, TRADE_EXCHANGE2, TRADE_ASSET3, TRADE_EXCHANGE3
     if config["use_db_config"] == True:
         db_config = session.query(TradeConfig).get(1)
         if db_config != None:
+            DB_CONFIG = db_config.__dict__
             db_buy_price = db_config.buy_price
             db_sell_price = db_config.stop_loss_price
             stop_loss_rate = db_config.stop_loss_rate
@@ -490,7 +491,7 @@ def start():
         print(datetime.now(), "LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
         validated = True
         latest_candels = []
-        [validated, latest_candels] = permitCandleStick(exchange)
+        [validated, latest_candels] = permitCandleStick(exchange, DB_CONFIG)
         # If fixed buy price set, buy and return
         if db_buy_price != None and current_price < db_buy_price:
             print(datetime.now(),"LOG: DB BUY Price Set, Buying at fixed price", db_buy_price)

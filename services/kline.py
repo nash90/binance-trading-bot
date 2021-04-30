@@ -413,16 +413,23 @@ def runRulesValidations2(latest_signals):
 
   return False
 
-def runRulesValidations3(latest_signals):
+def runRulesValidations3(latest_signals, db_config):
   c0 = latest_signals.iloc[0]
   c1 = latest_signals.iloc[1]
   c2 = latest_signals.iloc[2]
   c3 = latest_signals.iloc[3]
+
+  db_valid_pattern1 = db_config["valid_pattern1"]
+  db_valid_pattern2 = db_config["valid_pattern2"]
+  db_valid_pattern3 = db_config["valid_pattern3"]
+  db_valid_pattern4 = db_config["valid_pattern4"]
+  db_valid_pattern5 = db_config["valid_pattern5"]
+
   now = datetime.now()
   minute = now.minute
   patterns = {}
 
-  patterns["pattern_1"] = ("Bullish_Harami" in c0.candle_pattern)
+  patterns["pattern_1"] = (db_valid_pattern1 in c0.candle_pattern)
   patterns["pattern_2"] = (minute%15) > 9
   patterns["pattern_3"] = True
   patterns["pattern_4"] = True
@@ -437,7 +444,7 @@ def runRulesValidations3(latest_signals):
     return True
 
 
-def permitCandleStick(exchange):
+def permitCandleStick(exchange, db_config):
   df = getCandleAndClassify(exchange)
 
   latest_signals = df.nlargest(5,"Open_time")
@@ -450,7 +457,7 @@ def permitCandleStick(exchange):
 
   if VALIDATE_CANDLE_RULES == True:
     print(datetime.now(),"KLINE_LOG: Latest Signals", return_data)
-    validPerRules = runRulesValidations3(latest_signals)
+    validPerRules = runRulesValidations3(latest_signals, db_config)
     if validPerRules == True:
       return_data = saveCandles(return_data)
       return [True, return_data]
