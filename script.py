@@ -458,7 +458,7 @@ def getTradeAssetInfo():
         asset["asset"] = TRADE_ASSET3
 
 
-    print(datetime.now(), "LOG: current asset and exchange: ", TRADE_ASSET, TRADE_EXCHANGE)
+    print(datetime.now(), "LOG: current asset and exchange: ", asset)
     return asset
 
 def start():

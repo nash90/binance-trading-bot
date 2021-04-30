@@ -166,4 +166,4 @@ class TradeConfig(Base):
   valid_pattern3 = Column(String(200))
   valid_pattern4 = Column(String(200))
   valid_pattern5 = Column(String(200))
-  pattern_detect_time = Numeric(asdecimal=False)
+  pattern_detect_time = Column(Numeric(asdecimal=False))

@@ -414,6 +414,7 @@ def runRulesValidations2(latest_signals):
   return False
 
 def runRulesValidations3(latest_signals, db_config):
+  print("KLINE LOG: DB config", db_config)
   c0 = latest_signals.iloc[0]
   c1 = latest_signals.iloc[1]
   c2 = latest_signals.iloc[2]
