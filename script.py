@@ -1,4 +1,5 @@
 import os
+import argparse
 import time
 import logging
 import json
@@ -52,6 +53,10 @@ PAUSE_SELL = False
 session = Session()
 # APP constants
 
+parser = argparse.ArgumentParser(description = "Description for my parser")
+parser.add_argument("-a", "--asset", help = "Example: select specific asset", required = False, default = "")
+argument = parser.parse_args()
+
 def createTableIfNotExit():
     return Base.metadata.create_all(engine)
 createTableIfNotExit()
@@ -59,7 +64,7 @@ createTableIfNotExit()
 def getConfigFromDB():
     global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate
     global STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
-    global PAUSE_BUY, PAUSE_SELL, TRADE_ASSET, TRADE_EXCHANGE
+    global PAUSE_BUY, PAUSE_SELL, TRADE_ASSET, TRADE_EXCHANGE, TRADE_ASSET2, TRADE_EXCHANGE2, TRADE_ASSET3, TRADE_EXCHANGE3
     if config["use_db_config"] == True:
         db_config = session.query(TradeConfig).get(1)
         if db_config != None:
@@ -78,6 +83,10 @@ def getConfigFromDB():
             PAUSE_SELL = db_config.pause_sell 
             TRADE_ASSET = db_config.trade_asset
             TRADE_EXCHANGE = db_config.trade_exchange
+            TRADE_ASSET2 = db_config.trade_asset2
+            TRADE_EXCHANGE2 = db_config.trade_exchange2
+            TRADE_ASSET3 = db_config.trade_asset3
+            TRADE_EXCHANGE3 = db_config.trade_exchange3
 
 def setDBLogging():
     logging.basicConfig()
@@ -343,7 +352,7 @@ def createFreshOrder(exchange, current_price, latest_candels):
     ammount = roundAssetAmount(ammount, exchange)
 
     if MOCK_TRADE == True:
-        new_order = getMarketBuyMock("BTCUSDT", current_price, ammount, ammount, buy_size)
+        new_order = getMarketBuyMock(exchange, current_price, ammount, ammount, buy_size)
     else:
         new_order = marketBuy(exchange, ammount)  
  
@@ -436,11 +445,18 @@ def doSell(exchange, quantity, order, prices):
 
 def getTradeAssetInfo():
     asset = crypto_list[0]
-    if TRADE_EXCHANGE != None and TRADE_EXCHANGE != "":
+    print("argument asset", argument.asset)
+    if argument.asset == "1" and TRADE_EXCHANGE != None and TRADE_EXCHANGE != "":
         asset["exchange"] = TRADE_EXCHANGE
-
-    if TRADE_ASSET != None and TRADE_ASSET != "":
         asset["asset"] = TRADE_ASSET
+    elif argument.asset == "2" and TRADE_EXCHANGE2 != None and TRADE_EXCHANGE2 != "":
+        asset["exchange"] = TRADE_EXCHANGE2
+        asset["asset"] = TRADE_ASSET2
+    elif argument.asset == "2" and TRADE_EXCHANGE2 != None and TRADE_EXCHANGE2 != "":
+        asset["exchange"] = TRADE_EXCHANGE3
+        asset["asset"] = TRADE_ASSET3
+
+
     print(datetime.now(), "LOG: current asset and exchange: ", TRADE_ASSET, TRADE_EXCHANGE)
     return asset
 
@@ -451,7 +467,11 @@ def start():
     exchange = asset["exchange"]
 
     ## get order of unsold asset from DB
-    orders = session.query(Order).filter(Order.bought_flag == True).filter(Order.sold_flag == False).all()
+    orders = session.query(Order).filter(
+        Order.bought_flag == True).filter(
+        Order.sold_flag == False).filter(
+        Order.symbol == exchange
+        ).all()
     
     order = None
     if len(orders) > 0:

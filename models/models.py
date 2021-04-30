@@ -157,3 +157,7 @@ class TradeConfig(Base):
   invalid_candlestick_sleep = Column('invalid_candlestick_sleep', Numeric(asdecimal=False), default=20)
   pause_buy = Column('pause_buy', Boolean, default=True)
   pause_sell = Column('pause_sell', Boolean, default=True)
+  trade_asset2 = Column('trade_asset2', String(50), default="BTC")
+  trade_exchange2 = Column('trade_exchange2', String(50), default="BTCUSDT")
+  trade_asset3 = Column('trade_asset3', String(50), default="BTC")
+  trade_exchange3 = Column('trade_exchange3', String(50), default="BTCUSDT")
