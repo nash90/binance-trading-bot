@@ -424,13 +424,15 @@ def runRulesValidations3(latest_signals, db_config):
   db_valid_pattern3 = db_config["valid_pattern3"]
   db_valid_pattern4 = db_config["valid_pattern4"]
   db_valid_pattern5 = db_config["valid_pattern5"]
+  pattern_detect_time = db_config["pattern_detect_time"] if db_config["pattern_detect_time"] else 8
+  
 
   now = datetime.now()
   minute = now.minute
   patterns = {}
 
   patterns["pattern_1"] = (db_valid_pattern1 in c0.candle_pattern)
-  patterns["pattern_2"] = (minute%15) > 9
+  patterns["pattern_2"] = (minute%15) > pattern_detect_time
   patterns["pattern_3"] = True
   patterns["pattern_4"] = True
   patterns["pattern_5"] = True
