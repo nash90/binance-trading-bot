@@ -54,19 +54,23 @@ session = Session()
 # APP constants
 
 parser = argparse.ArgumentParser(description = "Description for my parser")
-parser.add_argument("-a", "--asset", help = "Example: select specific asset", required = False, default = "")
+parser.add_argument("-e", "--exchange", help = "Example: select specific exchange", required = False, default = "")
 argument = parser.parse_args()
 
 def createTableIfNotExit():
     return Base.metadata.create_all(engine)
 createTableIfNotExit()
 
-def getConfigFromDB():
+def getConfigFromDB(exchange=""):
     global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate
     global DB_CONFIG, STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
     global PAUSE_BUY, PAUSE_SELL, TRADE_ASSET, TRADE_EXCHANGE, TRADE_ASSET2, TRADE_EXCHANGE2, TRADE_ASSET3, TRADE_EXCHANGE3
     if config["use_db_config"] == True:
-        db_config = session.query(TradeConfig).get(1)
+        db_configs = session.query(TradeConfig).filter(
+            TradeConfig.trade_exchange == exchange
+        ).all()
+        db_config = None if len(db_configs) < 1 else db_configs[0]
+
         if db_config != None:
             DB_CONFIG = db_config.__dict__
             db_buy_price = db_config.buy_price
@@ -446,17 +450,10 @@ def doSell(exchange, quantity, order, prices):
 
 def getTradeAssetInfo():
     asset = crypto_list[0]
-    print("argument asset", argument.asset)
-    if argument.asset == "1" and TRADE_EXCHANGE != None and TRADE_EXCHANGE != "":
+    print("argument exchange", argument.exchange)
+    if TRADE_EXCHANGE != None and TRADE_EXCHANGE != "":
         asset["exchange"] = TRADE_EXCHANGE
         asset["asset"] = TRADE_ASSET
-    elif argument.asset == "2" and TRADE_EXCHANGE2 != None and TRADE_EXCHANGE2 != "":
-        asset["exchange"] = TRADE_EXCHANGE2
-        asset["asset"] = TRADE_ASSET2
-    elif argument.asset == "2" and TRADE_EXCHANGE2 != None and TRADE_EXCHANGE2 != "":
-        asset["exchange"] = TRADE_EXCHANGE3
-        asset["asset"] = TRADE_ASSET3
-
 
     print(datetime.now(), "LOG: current asset and exchange: ", asset)
     return asset
@@ -584,7 +581,7 @@ def runBatch():
         session.query(Order).filter(Order.sold_flag==False).update({Order.sold_flag:True})
 
     while run:
-        getConfigFromDB()
+        getConfigFromDB(argument.exchange)
         if STOP_COUNT > 0 and run_count > STOP_COUNT:
             run = False
             print(datetime.now(), "LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
