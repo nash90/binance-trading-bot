@@ -64,10 +64,14 @@ def checkBotPermit(db_config=None):
         daily_pause_enabled = db_config["daily_pause_permit"]
 
     if daily_pause_enabled == False:
-        return
+        return True
 
     today = datetime.today()
-    get_daily_configs = session.query(DailyConfig).filter(cast(DailyConfig.trade_date, Date)==cast(today, Date)).all()
+    get_daily_configs = session.query(DailyConfig).filter(
+        cast(DailyConfig.trade_date, Date)==cast(today, Date)
+    ).filter(
+        DailyConfig.trade_asset== db_config["trade_asset"]
+    ).all()
     daily_config = None
     current_daily_net_profit = getNetProfitByDay()
 
@@ -77,7 +81,8 @@ def checkBotPermit(db_config=None):
             trade_date = today,
             daily_loss_margin = daily_loss_margin,
             daily_profit_margin = daily_profit_margin,
-            daily_profit_stop_margin = daily_profit_stop_margin
+            daily_profit_stop_margin = daily_profit_stop_margin,
+            trade_asset = db_config["trade_asset"],
         )
         session.add(new_config)
         session.commit()
@@ -88,11 +93,12 @@ def checkBotPermit(db_config=None):
 
 
     if current_daily_net_profit < daily_loss_margin:
-        print("BOTPERMIT: Daily loss margin exceeded, Sleeping a day!!!",current_daily_net_profit,daily_loss_margin)
-        daily_config.bot_status = "SLEEPING"
+        print("BOTPERMIT: Daily loss margin exceeded, Skipping a day!!!",current_daily_net_profit,daily_loss_margin)
+        daily_config.bot_status = "SKIPPING"
         daily_config.daily_profit_stopped_value = current_daily_net_profit
         session.commit()
-        sleepTillNextDay(today)
+        #sleepTillNextDay(today)
+        return False
     else:
         new_daily_profit_stop_limit = current_daily_net_profit - (current_daily_net_profit * daily_profit_stop_margin)
         
@@ -105,11 +111,12 @@ def checkBotPermit(db_config=None):
                 session.commit()
 
             elif current_daily_net_profit < old_daily_profit_stop_limit:
-                print("BOTPERMIT: Sleeping now to maintain Profitibility till next day", current_daily_net_profit, old_daily_profit_stop_limit)
-                daily_config.bot_status = "SLEEPING"
+                print("BOTPERMIT: Skipping now to maintain Profitibility till next day", current_daily_net_profit, old_daily_profit_stop_limit)
+                daily_config.bot_status = "SKIPPING"
                 daily_config.daily_profit_stopped_value = current_daily_net_profit
                 session.commit()
-                sleepTillNextDay(today)
+                #sleepTillNextDay(today)
+                return False
             else:
                 print("BOTPERMIT: Continue bot without new config changes 2: ", current_daily_net_profit)
 
@@ -122,4 +129,5 @@ def checkBotPermit(db_config=None):
                 session.commit()
             else:
                 print("BOTPERMIT: Continue bot without new config changes: ", current_daily_net_profit)
+    return True
 

@@ -59,6 +59,7 @@ class DailyConfig(Base):
   daily_profit_stopped_value = Column('daily_profit_stopped_value', Numeric)
   bot_status = Column('bot_status', String(50))
   bot_log = Column('bot_log', String(50))
+  trade_asset = Column('trade_asset', String(50), default="")
 
 class Candle(Base):
   __tablename__ = 'market_candle'
