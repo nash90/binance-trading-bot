@@ -494,9 +494,10 @@ def start():
 
         print(datetime.now(), "LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
         validated = True
-        latest_candels = []
-        [validated, latest_candels] = permitCandleStick(exchange, DB_CONFIG)
         validated = checkBotPermit(DB_CONFIG)
+        latest_candels = []
+        if validated == True:
+            [validated, latest_candels] = permitCandleStick(exchange, DB_CONFIG)     
 
         if validated == True and ml_config.get("enable_ml_trade") == True:
             validated = validateMLTrade(latest_candels, validated)
