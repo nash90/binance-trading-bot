@@ -149,7 +149,7 @@ def roundAssetPrice(amount=0, symbol=''):
     elif symbol == 'DOGEUSDT':
         return round(amount, 6)
 
-    return round(amount, 2)
+    return round(amount, 6)
 
 def getMyAsset(assetName="BTC"):
     asset = client.get_asset_balance(asset=assetName)
