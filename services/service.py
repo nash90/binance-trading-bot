@@ -12,7 +12,7 @@ from models.models import Order
 
 session = Session()
 
-def getNetProfitByDay():
+def getNetProfitByDay(exchange):
     """
     conn = engine.connect()
     s = text(
@@ -26,8 +26,12 @@ def getNetProfitByDay():
     """
     today = datetime.now()
     all_daily_trades = session.query(Order).filter(
-        cast(Order.created_date, Date) == cast(today, Date)).filter(
-            Order.marker_sell_price.isnot(None)).all()
+        cast(Order.created_date, Date) == cast(today, Date)
+    ).filter(
+        Order.marker_sell_price.isnot(None)
+    ).filter(
+        Order.symbol == exchange
+    ).all()
 
     TRADE_CUT_RATE = 0.00075
     daily_profit = 0
@@ -56,24 +60,28 @@ def checkBotPermit(db_config=None):
     daily_profit_margin = config.get("bot_permit").get("daily_profit_margin")
     daily_profit_stop_margin = config.get("bot_permit").get("daily_profit_stop_margin")
     daily_pause_enabled = config.get("bot_permit").get("check_permit")
+    trade_asset = ""
+    trade_exchange = ""
 
     if db_config != None:
         daily_loss_margin = db_config["daily_loss_margin"]
         daily_profit_margin = db_config["daily_profit_margin"]
         daily_profit_stop_margin = db_config["daily_profit_stop_margin"]
         daily_pause_enabled = db_config["daily_pause_permit"]
+        trade_asset = db_config["trade_asset"]
+        trade_exchange = db_config["trade_exchange"]
 
     if daily_pause_enabled == False:
         return True
 
     today = datetime.today()
     get_daily_configs = session.query(DailyConfig).filter(
-        cast(DailyConfig.trade_date, Date)==cast(today, Date)
+        cast(DailyConfig.trade_date, Date) == cast(today, Date)
     ).filter(
-        DailyConfig.trade_asset== db_config["trade_asset"]
+        DailyConfig.trade_asset == trade_asset
     ).all()
     daily_config = None
-    current_daily_net_profit = getNetProfitByDay()
+    current_daily_net_profit = getNetProfitByDay(exchange=trade_exchange)
 
     if len(get_daily_configs) < 1:
         print("BOTPERMIT: Creating a new daily config record")
