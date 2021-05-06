@@ -29,9 +29,12 @@ def getNetProfitByDay():
         cast(Order.created_date, Date) == cast(today, Date)).filter(
             Order.marker_sell_price.isnot(None)).all()
 
+    TRADE_CUT_RATE = 0.00075
     daily_profit = 0
     for item in all_daily_trades:
-        net = ((item.marker_sell_price - item.price) / item.price )
+        net_buy_price = item.price + (item.price * TRADE_CUT_RATE)
+        net_sell_price = item.marker_sell_price - (item.marker_sell_price * TRADE_CUT_RATE)
+        net = ((net_sell_price - net_buy_price) / net_buy_price )
 
         daily_profit = daily_profit + net
 
@@ -47,13 +50,21 @@ def sleepTillNextDay(today):
     time.sleep(sleep_time)
 
 
-def checkBotPermit():
-    if config.get("bot_permit").get("check_permit") == False:
-        return
+def checkBotPermit(db_config=None):
 
     daily_loss_margin = config.get("bot_permit").get("daily_loss_margin")
     daily_profit_margin = config.get("bot_permit").get("daily_profit_margin")
     daily_profit_stop_margin = config.get("bot_permit").get("daily_profit_stop_margin")
+    daily_pause_enabled = config.get("bot_permit").get("check_permit")
+
+    if db_config != None:
+        daily_loss_margin = db_config["daily_loss_margin"]
+        daily_profit_margin = db_config["daily_profit_margin"]
+        daily_profit_stop_margin = db_config["daily_profit_stop_margin"]
+        daily_pause_enabled = db_config["daily_pause_permit"]
+
+    if daily_pause_enabled == False:
+        return
 
     today = datetime.today()
     get_daily_configs = session.query(DailyConfig).filter(cast(DailyConfig.trade_date, Date)==cast(today, Date)).all()

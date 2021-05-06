@@ -446,7 +446,7 @@ def doSell(exchange, quantity, order, prices):
     executeStopLoss(exchange, quantity, order, prices)
     if STOP_COUNT > 0:
         run_count += 1
-    checkBotPermit()
+    checkBotPermit(DB_CONFIG)
 
 def getTradeAssetInfo():
     asset = crypto_list[0]
