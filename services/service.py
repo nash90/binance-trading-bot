@@ -84,7 +84,7 @@ def checkBotPermit(db_config=None):
     current_daily_net_profit = getNetProfitByDay(exchange=trade_exchange)
 
     if len(get_daily_configs) < 1:
-        print("BOTPERMIT: Creating a new daily config record")
+        print("BOTPERMIT: Creating a new daily config record: asset_num ", trade_asset)
         new_config = DailyConfig(
             trade_date = today,
             daily_loss_margin = daily_loss_margin,
@@ -96,7 +96,7 @@ def checkBotPermit(db_config=None):
         session.commit()
         daily_config = new_config
     else:
-        print("BOTPERMIT: Found daily config record")
+        print("BOTPERMIT: Found daily config record: asset_num ", trade_asset)
         daily_config = get_daily_configs[0]
 
 
