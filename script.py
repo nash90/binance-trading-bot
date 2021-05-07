@@ -13,6 +13,7 @@ from binance.enums import *
 from datetime import datetime
 
 from configs.config import config
+from configs.lotsize import lotsize
 from models.base import Base
 from models.base import engine
 from models.base import Session
@@ -103,44 +104,12 @@ def getFloor(num, places):
   return floor
 
 def roundAssetAmount(amount=0, symbol=''):
-  amount = float(amount)
+    amount = float(amount)
+    symbol_lotsize = lotsize.get(symbol)
+    if symbol_lotsize != None:
+        return getFloor(amount, symbol_lotsize)
 
-  if symbol == 'ADABNB':
-    return getFloor(amount, 0)
-  elif symbol == 'ADAUSDT':
-    return getFloor(amount, 1)
-  elif symbol == 'BTCUSDT':
     return getFloor(amount, 6)
-  elif symbol == 'BNBETH':
-    return getFloor(amount, 2) 
-  elif symbol == 'BNBUSDT':
-    return getFloor(amount, 3)
-  elif symbol == 'BNBBTC':
-    return getFloor(amount, 2)
-  elif symbol == 'BNBEUR':
-    return getFloor(amount, 3)        
-  elif symbol == 'ETHBTC':
-    return getFloor(amount, 3)
-  elif symbol == 'ETHUSDT':
-    return getFloor(amount, 5)
-  elif symbol == 'EURUSDT':
-    return getFloor(amount, 2)
-  elif symbol == 'LINKETH':
-    return getFloor(amount, 2)
-  elif symbol == 'LINKUSDT':
-    return getFloor(amount, 2)
-  elif symbol == 'LINKBTC':
-    return getFloor(amount, 1)          
-  elif symbol == 'TRXXRP':
-    return getFloor(amount, 1)
-  elif symbol == 'TRXUSDT':
-    return getFloor(amount, 1)         
-  elif symbol == 'XRPUSDT':
-    return getFloor(amount, 1)
-  elif symbol == 'XRPBNB':
-    return getFloor(amount, 1) 
-
-  return getFloor(amount, 6)
 
 def roundAssetPrice(amount=0, symbol=''):
     amount = float(amount)
@@ -595,8 +564,9 @@ def runBatch():
 
         try:
             start()
-        except (binance.exceptions.BinanceAPIException, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
+        except (binance.exceptions.BinanceAPIException, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:     
             print(datetime.now(), "Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
+            print(e)
             time.sleep(ERROR_SLEEP)
 
         time.sleep(BOT_FREQUENCY)
