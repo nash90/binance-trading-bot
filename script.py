@@ -63,7 +63,7 @@ def createTableIfNotExit():
 createTableIfNotExit()
 
 def getConfigFromDB(asset="1"):
-    global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate
+    global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate, buy_size
     global DB_CONFIG, STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
     global PAUSE_BUY, PAUSE_SELL, TRADE_ASSET, TRADE_EXCHANGE, TRADE_ASSET2, TRADE_EXCHANGE2, TRADE_ASSET3, TRADE_EXCHANGE3
     if config["use_db_config"] == True:
@@ -79,6 +79,7 @@ def getConfigFromDB(asset="1"):
             stop_loss_rate = db_config.stop_loss_rate
             profit_rate = db_config.profit_rate
             stop_profit_rate = db_config.profit_stop_loss_rate
+            buy_size = db_config.principle_amount
             STOP_COUNT = db_config.stop_script
             BOT_FREQUENCY = db_config.bot_freqency
             PROFIT_SLEEP = db_config.profit_sleep
