@@ -456,12 +456,6 @@ def start():
             print(datetime.now(), "LOG: Pause Buy Flag is ON!!!", current_price)
             return
 
-        # If fixed buy price set, buy and return
-        if db_buy_price != None and current_price < db_buy_price:
-            print(datetime.now(),"LOG: DB BUY Price Set, Buying at fixed price", db_buy_price, current_price)
-            createFreshOrder(exchange, current_price, latest_candels)
-            return
-
         print(datetime.now(), "LOG: Try to Create New Fresh Order for Target with Validation checks: ", current_price)
         validated = True
         validated = checkBotPermit(DB_CONFIG)
@@ -471,6 +465,12 @@ def start():
 
         if validated == True and ml_config.get("enable_ml_trade") == True:
             validated = validateMLTrade(latest_candels, validated)
+
+        # If fixed buy price set, buy and return
+        if db_buy_price != None and current_price < db_buy_price:
+            print(datetime.now(),"LOG: DB BUY Price Set, Buying at fixed price", db_buy_price, current_price)
+            createFreshOrder(exchange, current_price, latest_candels)
+            return
 
         if validated:
             print(datetime.now(), "LOG: ALL Candle Validation Passed!!")
