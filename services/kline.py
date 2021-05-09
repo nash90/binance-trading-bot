@@ -72,6 +72,8 @@ def candle_score(lst_0,lst_1,lst_2, lst3):
     inverted_hammer=(((H_0 - L_0)>3*(O_0 -C_0)) &  ((H_0 - C_0)/(.001 + H_0 - L_0) > 0.6) & ((H_0 - O_0)/(.001 + H_0 - L_0) > 0.6))
     
     bullish_reversal= (O_2 > C_2)&(O_1 > C_1)&doji
+
+    Bullish_Reversal_Hammer = (O_2 > C_2)&(O_1 > C_1)&hammer&C_0>O_0
     
     bearish_reversal= (O_2 < C_2)&(O_1 < C_1)&doji
     
@@ -118,35 +120,38 @@ def candle_score(lst_0,lst_1,lst_2, lst3):
     if shooting_Star_bullish:
         strCandle=strCandle+'/ '+'shooting_Star_bullish'
         candle_score=candle_score-1
-    if    hammer:
+    if hammer:
         strCandle=strCandle+'/ '+'hammer'
-    if    inverted_hammer:
+    if inverted_hammer:
         strCandle=strCandle+'/ '+'inverted_hammer'
-    if    bearish_harami:
+    if bearish_harami:
         strCandle=strCandle+'/ '+'bearish_harami'
         candle_score=candle_score-1
-    if    Bullish_Harami:
+    if Bullish_Harami:
         strCandle=strCandle+'/ '+'Bullish_Harami'
         candle_score=candle_score+1
-    if    Bearish_Engulfing:
+    if Bearish_Engulfing:
         strCandle=strCandle+'/ '+'Bearish_Engulfing'
         candle_score=candle_score-1
-    if    Bullish_Engulfing:
+    if Bullish_Engulfing:
         strCandle=strCandle+'/ '+'Bullish_Engulfing'
         candle_score=candle_score+1
-    if    bullish_reversal:
+    if bullish_reversal:
         strCandle=strCandle+'/ '+'bullish_reversal'
         candle_score=candle_score+1
-    if    bearish_reversal:
+    if Bullish_Reversal_Hammer:
+        strCandle=strCandle+'/ '+'Bullish_Reversal_Hammer'
+        candle_score=candle_score+1
+    if bearish_reversal:
         strCandle=strCandle+'/ '+'bearish_reversal'
         candle_score=candle_score-1
-    if    Piercing_Line_bullish:
+    if Piercing_Line_bullish:
         strCandle=strCandle+'/ '+'Piercing_Line_bullish'
         candle_score=candle_score+1
-    if    Hanging_Man_bearish:
+    if Hanging_Man_bearish:
         strCandle=strCandle+'/ '+'Hanging_Man_bearish'
         candle_score=candle_score-1
-    if    Hanging_Man_bullish:
+    if Hanging_Man_bullish:
         strCandle=strCandle+'/ '+'Hanging_Man_bullish'
         candle_score=candle_score+1
 
