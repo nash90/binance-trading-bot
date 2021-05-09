@@ -73,7 +73,7 @@ def candle_score(lst_0,lst_1,lst_2, lst3):
     
     bullish_reversal= (O_2 > C_2)&(O_1 > C_1)&doji
 
-    Bullish_Reversal_Hammer = (O_2 > C_2)&(O_1 > C_1)&hammer&C_0>O_0
+    Bullish_Reversal_Hammer = (O_2 > C_2) & (O_1 > C_1) & hammer & (C_0 > O_0)
     
     bearish_reversal= (O_2 < C_2)&(O_1 < C_1)&doji
     
