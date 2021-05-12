@@ -168,3 +168,4 @@ class TradeConfig(Base):
   valid_pattern4 = Column(String(200))
   valid_pattern5 = Column(String(200))
   pattern_detect_time = Column(Numeric(asdecimal=False))
+  max_stoploss_hrs = Column(Numeric(asdecimal=False))
