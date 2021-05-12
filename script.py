@@ -50,6 +50,8 @@ CHECK_LOSS_PREDICTION = ml_config.get("check_loss_prediction")
 MOCK_TRADE = config.get("mock_trade")
 PAUSE_BUY = False
 PAUSE_SELL = False
+STOPLOSS_HISTORY = {}
+MAX_STOPLOSS_HRS = 2
 
 session = Session()
 # APP constants
@@ -66,6 +68,7 @@ def getConfigFromDB(asset="1"):
     global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate, buy_size
     global DB_CONFIG, STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
     global PAUSE_BUY, PAUSE_SELL, TRADE_ASSET, TRADE_EXCHANGE, TRADE_ASSET2, TRADE_EXCHANGE2, TRADE_ASSET3, TRADE_EXCHANGE3
+    global MAX_STOPLOSS_HRS
     if config["use_db_config"] == True:
         db_configs = session.query(TradeConfig).filter(
             TradeConfig.trade_asset == asset
@@ -94,6 +97,7 @@ def getConfigFromDB(asset="1"):
             TRADE_EXCHANGE2 = db_config.trade_exchange2
             TRADE_ASSET3 = db_config.trade_asset3
             TRADE_EXCHANGE3 = db_config.trade_exchange3
+            MAX_STOPLOSS_HRS = db_config.max_stoploss_hrs
 
 def setDBLogging():
     logging.basicConfig()
@@ -418,6 +422,18 @@ def doSell(exchange, quantity, order, prices):
         run_count += 1
     #checkBotPermit(DB_CONFIG)
 
+
+def doStopLossSell(exchange, quantity, order, prices):
+    global STOPLOSS_HISTORY
+    dateHour = datetime.now().strftime("%Y-%m-%d-%H")
+    STOPLOSS_HISTORY[dateHour] = 1
+    print(datetime.now(), "LOG: stop loss sell called with STOPLOSS_HISTORY: ", STOPLOSS_HISTORY)
+    if len(STOPLOSS_HISTORY.keys()) > MAX_STOPLOSS_HRS:
+        doSell(exchange, quantity, order, prices)
+        time.sleep(LOSS_SLEEP)
+        STOPLOSS_HISTORY = {}
+    
+
 def getTradeAssetInfo():
     asset = crypto_list[0]
     print("argument asset", argument.asset)
@@ -505,8 +521,9 @@ def start():
             
             if current_price < price_order_stop_loss:
                 print(datetime.now(), "LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
-                doSell(exchange, quantity, order, prices)
-                time.sleep(LOSS_SLEEP)
+                #doSell(exchange, quantity, order, prices)
+                #time.sleep(LOSS_SLEEP)
+                doStopLossSell(exchange, quantity, order, prices)
 
             elif current_price > price_profit_margin:
                 print(datetime.now(), "LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
