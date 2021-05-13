@@ -123,7 +123,7 @@ def roundAssetPrice(amount=0, symbol=''):
     elif symbol == 'DOGEUSDT':
         return round(amount, 6)
     elif symbol == 'DOGEBTC':
-        return round(amount, 7)
+        return round(amount, 8)
 
     return round(amount, 6)
 
