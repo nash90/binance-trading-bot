@@ -52,6 +52,8 @@ PAUSE_BUY = False
 PAUSE_SELL = False
 STOPLOSS_HISTORY = {}
 MAX_STOPLOSS_HRS = 2
+PARTIAL_STOP_LOSS_COUNT = config.get("partial_stop_loss_count")
+PARTIAL_STOP_LOSS_RATE = config.get("partial_stop_loss_rate")
 
 session = Session()
 # APP constants
@@ -68,7 +70,7 @@ def getConfigFromDB(asset="1"):
     global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate, buy_size
     global DB_CONFIG, STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
     global PAUSE_BUY, PAUSE_SELL, TRADE_ASSET, TRADE_EXCHANGE, TRADE_ASSET2, TRADE_EXCHANGE2, TRADE_ASSET3, TRADE_EXCHANGE3
-    global MAX_STOPLOSS_HRS
+    global MAX_STOPLOSS_HRS, PARTIAL_STOP_LOSS_COUNT, PARTIAL_STOP_LOSS_RATE
     if config["use_db_config"] == True:
         db_configs = session.query(TradeConfig).filter(
             TradeConfig.trade_asset == asset
@@ -98,6 +100,8 @@ def getConfigFromDB(asset="1"):
             TRADE_ASSET3 = db_config.trade_asset3
             TRADE_EXCHANGE3 = db_config.trade_exchange3
             MAX_STOPLOSS_HRS = db_config.max_stoploss_hrs
+            PARTIAL_STOP_LOSS_COUNT = db_config.partial_stop_loss_count
+            PARTIAL_STOP_LOSS_RATE = db_config.partial_stop_loss_rate
 
 def setDBLogging():
     logging.basicConfig()
@@ -259,6 +263,7 @@ def getPrices(exchange, buy_price, current_price):
 
     buy_price = float(buy_price)
     stop_loss = buy_price - (buy_price *  stop_loss_rate)
+    partial_stop_loss_price = buy_price - (buy_price * stop_loss_rate * PARTIAL_STOP_LOSS_RATE)
     limit_profit =  buy_price + (buy_price * profit_rate)
     stop_limit_profit = None
     
@@ -271,7 +276,8 @@ def getPrices(exchange, buy_price, current_price):
         "buy_price": buy_price,
         "stop_loss": stop_loss,
         "limit_profit": limit_profit,
-        "stop_limit_profit":stop_limit_profit
+        "stop_limit_profit":stop_limit_profit,
+        "partial_stop_loss_price": partial_stop_loss_price,
     }
     return prices
 
@@ -429,8 +435,13 @@ def doStopLossSell(exchange, quantity, order, prices):
     global STOPLOSS_HISTORY
     dateHour = datetime.now().strftime("%Y-%m-%d-%H")
     STOPLOSS_HISTORY[dateHour] = 1
+    history_size = len(STOPLOSS_HISTORY.keys())
     print(datetime.now(), "LOG: stop loss sell called with STOPLOSS_HISTORY: ", STOPLOSS_HISTORY)
-    if len(STOPLOSS_HISTORY.keys()) > MAX_STOPLOSS_HRS:
+    if history_size > PARTIAL_STOP_LOSS_COUNT:
+        print(datetime.now(), "LOG: Setting partial stop loss flag on: ", STOPLOSS_HISTORY, PARTIAL_STOP_LOSS_COUNT)
+        order.partial_stop_loss_on = True
+
+    if history_size > MAX_STOPLOSS_HRS:
         doSell(exchange, quantity, order, prices)
         time.sleep(LOSS_SLEEP)
         STOPLOSS_HISTORY = {}
@@ -510,6 +521,7 @@ def start():
         price_order_stop_loss = prices.get("stop_loss")
         price_profit_margin = prices.get("limit_profit")
         price_profit_stop_loss = prices.get("stop_limit_profit")
+        partial_stop_loss_price = prices.get("partial_stop_loss_price")
 
         # If fixed sell price set, sell and return
         if db_sell_price != None and current_price > db_sell_price:
@@ -526,7 +538,7 @@ def start():
                 #doSell(exchange, quantity, order, prices)
                 #time.sleep(LOSS_SLEEP)
                 doStopLossSell(exchange, quantity, order, prices)
-
+            
             elif current_price > price_profit_margin:
                 print(datetime.now(), "LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
                 stop_limit_profit = current_price - (current_price * stop_profit_rate)
@@ -536,6 +548,11 @@ def start():
                 order.profit_sale_stop_loss_price = stop_limit_profit ## bot handles stop loss instead of server
                 order.profit_sale_process_flag = True
                 sessionCommit()
+            
+            elif order.partial_stop_loss_on == True and current_price > partial_stop_loss_price:
+                print(datetime.now(), "LOG: Partial Stop Loss value triggered", current_price, price_order_stop_loss)
+                doSell(exchange, quantity, order, prices)
+                time.sleep(LOSS_SLEEP)
 
             else:
                 print(datetime.now(), "LOG: Keep Observing Market for Selling Opprtunity", prices) 
