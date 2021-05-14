@@ -1,11 +1,12 @@
 """
 Entry point of script
 """
-import os
+#import os
 import math
 import argparse
 import time
 import logging
+from datetime import datetime
 import json
 import requests
 import pandas as pd
@@ -20,7 +21,6 @@ from binance.enums import (
     ORDER_TYPE_STOP_LOSS_LIMIT,
     ORDER_TYPE_MARKET
     )
-from datetime import datetime
 
 from configs.config import config
 from configs.lotsize import lotsize
@@ -508,15 +508,15 @@ def start():
 
     ## get order of unsold asset from DB
     orders = session.query(Order).filter(
-        Order.bought_flag == True).filter(
-        Order.sold_flag == False).filter(
+        Order.bought_flag).filter(
+        not Order.sold_flag).filter(
         Order.symbol == exchange
         ).all()
-    
+
     order = None
     if len(orders) > 0:
         order = orders[0]
-    
+
     current_price = getCurrentAssetRate(exchange)
 
     ###################
@@ -533,7 +533,7 @@ def start():
         validated = checkBotPermit(DB_CONFIG)
         latest_candels = []
         if validated:
-            [validated, latest_candels] = permitCandleStick(exchange, DB_CONFIG)     
+            [validated, latest_candels] = permitCandleStick(exchange, DB_CONFIG)
 
         if validated and ml_config.get("enable_ml_trade"):
             validated = validateMLTrade(latest_candels, validated)
@@ -575,13 +575,13 @@ def start():
 
         if not order.profit_sale_process_flag:
             print(datetime.now(), "LOG: Not Open Sale Stop loss Order ", prices)
-            
+
             if current_price < price_order_stop_loss:
                 print(datetime.now(), "LOG: Stop Loss value triggered", current_price, price_order_stop_loss)
                 #doSell(exchange, quantity, order, prices)
                 #time.sleep(LOSS_SLEEP)
                 doStopLossSell(exchange, quantity, order, prices)
-            
+
             elif current_price > price_profit_margin:
                 print(datetime.now(), "LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
                 stop_limit_profit = current_price - (current_price * STOP_PROFIT_RATE)
@@ -591,14 +591,14 @@ def start():
                 order.profit_sale_stop_loss_price = stop_limit_profit ## bot handles stop loss instead of server
                 order.profit_sale_process_flag = True
                 sessionCommit()
-            
+
             elif order.partial_stop_loss_on and current_price > partial_stop_loss_price:
                 print(datetime.now(), "LOG: Partial Stop Loss value triggered", current_price, price_order_stop_loss)
                 doSell(exchange, quantity, order, prices)
                 time.sleep(LOSS_SLEEP)
 
             else:
-                print(datetime.now(), "LOG: Keep Observing Market for Selling Opprtunity", prices) 
+                print(datetime.now(), "LOG: Keep Observing Market for Selling Opprtunity", prices)
 
         else:
             print(datetime.now(), "LOG: Open Sale Stop loss Order Found ", order.id, prices)
@@ -634,7 +634,7 @@ def runBatch():
     global RUN_COUNT
     run = True
     if config.get("reset_db"):
-        session.query(Order).filter(Order.sold_flag==False).update({Order.sold_flag:True})
+        session.query(Order).filter(not Order.sold_flag).update({Order.sold_flag:True})
 
     while run:
         getConfigFromDB(argument.asset)
@@ -645,7 +645,7 @@ def runBatch():
 
         try:
             start()
-        except (binance.exceptions.BinanceAPIException, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as ex:     
+        except (binance.exceptions.BinanceAPIException, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as ex:
             print(datetime.now(), "Got an ConnectionError exception:" + "\n" + str(ex.args) + "\n" + "Ignoring to repeat the attempt later.")
             print(ex)
             time.sleep(ERROR_SLEEP)
@@ -655,5 +655,5 @@ def runBatch():
     session.close()
 
 
-if config.get("start_bot"):      
+if config.get("start_bot"):
     runBatch()
