@@ -1,4 +1,8 @@
+"""
+Entry point of script
+"""
 import os
+import math
 import argparse
 import time
 import logging
@@ -6,10 +10,16 @@ import json
 import requests
 import pandas as pd
 import binance
-import math
 
 from binance.client import Client
-from binance.enums import *
+from binance.enums import (
+    ORDER_TYPE_LIMIT,
+    SIDE_BUY,
+    TIME_IN_FORCE_GTC,
+    SIDE_SELL,
+    ORDER_TYPE_STOP_LOSS_LIMIT,
+    ORDER_TYPE_MARKET
+    )
 from datetime import datetime
 
 from configs.config import config
@@ -32,12 +42,12 @@ api_key = config["api_key"]
 api_secret = config["api_secret"]
 client = Client(api_key, api_secret)
 
-crypto_list = config["crypto_list"]
-stop_loss_rate = config["stop_loss"]
+CRYPTO_LIST = config["crypto_list"]
+STOP_LOSS_RATE = config["stop_loss"]
 # stop_loss = 10
-profit_rate = config["profit_rate"]
-stop_profit_rate = config["stop_profit_rate"]
-run_count = 1
+PROFIT_RATE = config["profit_rate"]
+STOP_PROFIT_RATE = config["stop_profit_rate"]
+RUN_COUNT = 1
 STOP_COUNT = config.get("stop_script")
 BOT_FREQUENCY = config.get("bot_freqency")
 PROFIT_SLEEP = config.get("profit_sleep")
@@ -54,20 +64,31 @@ STOPLOSS_HISTORY = {}
 MAX_STOPLOSS_HRS = 2
 PARTIAL_STOP_LOSS_COUNT = config.get("partial_stop_loss_count")
 PARTIAL_STOP_LOSS_RATE = config.get("partial_stop_loss_rate")
+DB_BUY_PRICE = None
+DB_CONFIG = None
+DB_SELL_PRICE = None
 
 session = Session()
 # APP constants
 
 parser = argparse.ArgumentParser(description = "Description for my parser")
-parser.add_argument("-a", "--asset", help = "Example: select specific asset", required = False, default = "1")
+parser.add_argument(
+    "-a",
+    "--asset",
+    help = "Example: select specific asset",
+    required = False,
+    default = "1"
+    )
 argument = parser.parse_args()
 
 def createTableIfNotExit():
+    """docstring"""
     return Base.metadata.create_all(engine)
 createTableIfNotExit()
 
 def getConfigFromDB(asset="1"):
-    global db_buy_price, db_sell_price, stop_loss_rate, profit_rate, stop_profit_rate, buy_size
+    """docstring"""
+    global DB_BUY_PRICE, DB_SELL_PRICE, STOP_LOSS_RATE, PROFIT_RATE, STOP_PROFIT_RATE, BUY_SIZE
     global DB_CONFIG, STOP_COUNT, BOT_FREQUENCY, PROFIT_SLEEP, LOSS_SLEEP, ERROR_SLEEP, MOCK_TRADE
     global PAUSE_BUY, PAUSE_SELL, TRADE_ASSET, TRADE_EXCHANGE, TRADE_ASSET2, TRADE_EXCHANGE2, TRADE_ASSET3, TRADE_EXCHANGE3
     global MAX_STOPLOSS_HRS, PARTIAL_STOP_LOSS_COUNT, PARTIAL_STOP_LOSS_RATE
@@ -77,14 +98,14 @@ def getConfigFromDB(asset="1"):
         ).all()
         db_config = None if len(db_configs) < 1 else db_configs[0]
 
-        if db_config != None:
+        if db_config is not None:
             DB_CONFIG = db_config.__dict__
-            db_buy_price = db_config.buy_price
-            db_sell_price = db_config.stop_loss_price
-            stop_loss_rate = db_config.stop_loss_rate
-            profit_rate = db_config.profit_rate
-            stop_profit_rate = db_config.profit_stop_loss_rate
-            buy_size = db_config.principle_amount
+            DB_BUY_PRICE = db_config.buy_price
+            DB_SELL_PRICE = db_config.stop_loss_price
+            STOP_LOSS_RATE = db_config.stop_loss_rate
+            PROFIT_RATE = db_config.profit_rate
+            STOP_PROFIT_RATE = db_config.profit_stop_loss_rate
+            BUY_SIZE = db_config.principle_amount
             STOP_COUNT = db_config.stop_script
             BOT_FREQUENCY = db_config.bot_freqency
             PROFIT_SLEEP = db_config.profit_sleep
@@ -92,7 +113,7 @@ def getConfigFromDB(asset="1"):
             ERROR_SLEEP = db_config.error_sleep
             MOCK_TRADE = db_config.mock_trade
             PAUSE_BUY = db_config.pause_buy
-            PAUSE_SELL = db_config.pause_sell 
+            PAUSE_SELL = db_config.pause_sell
             TRADE_ASSET = db_config.trade_asset
             TRADE_EXCHANGE = db_config.trade_exchange
             TRADE_ASSET2 = db_config.trade_asset2
@@ -104,23 +125,26 @@ def getConfigFromDB(asset="1"):
             PARTIAL_STOP_LOSS_RATE = db_config.partial_stop_loss_rate
 
 def setDBLogging():
+    """docstring"""
     logging.basicConfig()
     logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 def getFloor(num, places):
-  
-  floor = ((math.floor(num * (10 ** places))) / (10 ** places))
-  return floor
+    """docstring"""
+    floor = ((math.floor(num * (10 ** places))) / (10 ** places))
+    return floor
 
 def roundAssetAmount(amount=0, symbol=''):
+    """docstring"""
     amount = float(amount)
     symbol_lotsize = lotsize.get(symbol)
-    if symbol_lotsize != None:
+    if symbol_lotsize is not None:
         return getFloor(amount, symbol_lotsize)
 
     return getFloor(amount, 6)
 
 def roundAssetPrice(amount=0, symbol=''):
+    """docstring"""
     amount = float(amount)
     if symbol == 'BTCUSDT':
         return round(amount, 2)
@@ -131,13 +155,15 @@ def roundAssetPrice(amount=0, symbol=''):
 
     return round(amount, 8)
 
-def getMyAsset(assetName="BTC"):
-    asset = client.get_asset_balance(asset=assetName)
-    print("getMyAsset: " + assetName +" : "+ json.dumps(asset))
+def getMyAsset(asset_name="BTC"):
+    """docstring"""
+    asset = client.get_asset_balance(asset=asset_name)
+    print("getMyAsset: " + asset_name +" : "+ json.dumps(asset))
     return asset
 
 
 def getCurrentAssetRate(asset="BTCUSDT"):
+    """docstring"""
     rate = 0
     order_book = client.get_order_book(symbol=asset)
     rate = order_book.get("asks")[0][0]
@@ -145,6 +171,7 @@ def getCurrentAssetRate(asset="BTCUSDT"):
 
 
 def buyAsset(exchange, quantity, price):
+    """docstring"""
     params = {
         "symbol":exchange,
         "side":SIDE_BUY,
@@ -166,7 +193,7 @@ def buyAsset(exchange, quantity, price):
 
 
 def marketBuy(exchange, quantity):
-
+    """docstring"""
     params = {
         "symbol": exchange,
         "quantity": quantity
@@ -179,10 +206,11 @@ def marketBuy(exchange, quantity):
     )
     print(datetime.now(), "LOG: Market Buy Asset",order)
 
-    return order    
+    return order
 
 
 def sellAsset(exchange, quantity, price):
+    """docstring"""
     order = client.create_order(
         symbol=exchange,
         side=SIDE_SELL,
@@ -194,7 +222,7 @@ def sellAsset(exchange, quantity, price):
     return order
 
 def marketSell(exchange, quantity):
-
+    """docstring"""
     params = {
         "symbol": exchange,
         "quantity": quantity
@@ -207,22 +235,25 @@ def marketSell(exchange, quantity):
     )
     print(datetime.now(), "LOG: Market Sell Asset",order)
 
-    return order    
+    return order
 
 
 def getOrders(symbol,limit=1):
+    """docstring"""
     order = client.get_all_orders(symbol=symbol, limit=limit)
     print("LOG: Fetched ALL Order")
     return order
 
 
 def getOpenOrders(exchange):
+    """docstring"""
     order = client.get_open_orders(symbol=exchange)
     print("LOG: Fetched All Open Order")
     return order
 
 
-def getMyPortfolio(check_list=crypto_list):
+def getMyPortfolio(check_list):
+    """docstring"""
     my_assets = client.get_account()
     assets = []
     for asset in my_assets["balances"]:
@@ -233,6 +264,7 @@ def getMyPortfolio(check_list=crypto_list):
 
 
 def setStopLoss(exchange, quantity, sell_price):
+    """docstring"""
     params = {
         "symbol":exchange,
         "side":SIDE_SELL,
@@ -256,19 +288,20 @@ def setStopLoss(exchange, quantity, sell_price):
 
 
 def getPrices(exchange, buy_price, current_price):
-    if current_price == None:
+    """docstring"""
+    if current_price is None:
         current_price = getCurrentAssetRate(exchange)
-    if buy_price == None:
+    if buy_price is None:
         buy_price = float(current_price)
 
     buy_price = float(buy_price)
-    stop_loss = buy_price - (buy_price *  stop_loss_rate)
-    partial_stop_loss_price = buy_price - (buy_price * stop_loss_rate * PARTIAL_STOP_LOSS_RATE)
-    limit_profit =  buy_price + (buy_price * profit_rate)
+    stop_loss = buy_price - (buy_price *  STOP_LOSS_RATE)
+    partial_stop_loss_price = buy_price - (buy_price * STOP_LOSS_RATE * PARTIAL_STOP_LOSS_RATE)
+    limit_profit =  buy_price + (buy_price * PROFIT_RATE)
     stop_limit_profit = None
-    
+
     if current_price > limit_profit:
-        stop_limit_profit = current_price - (current_price * stop_profit_rate)
+        stop_limit_profit = current_price - (current_price * STOP_PROFIT_RATE)
         stop_limit_profit = float(stop_limit_profit)
 
     prices = {
@@ -282,40 +315,43 @@ def getPrices(exchange, buy_price, current_price):
     return prices
 
 
-def cancelOrder(exchange, orderId):
+def cancelOrder(exchange, order_id):
+    """docstring"""
     order = client.cancel_order(
     symbol=exchange,
-    orderId=orderId)
-    print("LOG: Order was Canceled ", orderId)
+    orderId=order_id)
+    print("LOG: Order was Canceled ", order_id)
     return order
 
 
 def addDataToDB(obj):
-  session.add(obj)
-  sessionCommit()
+    """docstring"""
+    session.add(obj)
+    sessionCommit()
 
 
 def sessionCommit():
-    try:  
+    """docstring"""
+    try:
         session.commit()
-    except Exception as e:
-        #print(e)
+    except Exception as ex:
+        #print(ex)
         session.rollback()
-        raise e
+        raise ex
 
 
 begin_asset = float(getMyAsset(config.get("root_asset"))["free"])
-my_portfolio = getMyPortfolio(crypto_list)
+my_portfolio = getMyPortfolio(CRYPTO_LIST)
 
 total_root_asset = config.get("principle_amount") # test purpose
-buy_size = total_root_asset / len(crypto_list)
-buy_size = roundAssetAmount(buy_size, "")
+BUY_SIZE = total_root_asset / len(CRYPTO_LIST)
+BUY_SIZE = roundAssetAmount(BUY_SIZE, "")
 
 
 def executeStopLoss(exchange, quantity, order, prices):
-
-    if MOCK_TRADE == True:
-        sold = getMarketSellMock(exchange, prices["current_price"], quantity, quantity, buy_size)
+    """docstring"""
+    if MOCK_TRADE:
+        sold = getMarketSellMock(exchange, prices["current_price"], quantity, quantity, BUY_SIZE)
     else:
         sold = marketSell(exchange, quantity)
     order.market_sell_txn_id = sold.get("orderId")
@@ -331,18 +367,19 @@ def executeStopLoss(exchange, quantity, order, prices):
         price_ms = roundAssetPrice(price_ms, exchange)
     order.marker_sell_price = price_ms
 
-    sessionCommit()   
+    sessionCommit()
 
 
 def createFreshOrder(exchange, current_price, latest_candels):
-    ammount = buy_size / current_price
+    """docstring"""
+    ammount = BUY_SIZE / current_price
     ammount = roundAssetAmount(ammount, exchange)
 
-    if MOCK_TRADE == True:
-        new_order = getMarketBuyMock(exchange, current_price, ammount, ammount, buy_size)
+    if MOCK_TRADE:
+        new_order = getMarketBuyMock(exchange, current_price, ammount, ammount, BUY_SIZE)
     else:
-        new_order = marketBuy(exchange, ammount)  
- 
+        new_order = marketBuy(exchange, ammount)
+
     price_mb = roundAssetPrice(float(new_order.get("price")), exchange)
     fills = new_order.get("fills")
     if len(fills) > 0:
@@ -389,6 +426,7 @@ def createFreshOrder(exchange, current_price, latest_candels):
     addDataToDB(db_order)
 
 def validateMLTrade(latest_candels, validated):
+    """docstring"""
     ml_file = ml_config.get("model_file")
     scale_file = ml_config.get("scale_file")
     model = loadObject(ml_file)
@@ -397,21 +435,21 @@ def validateMLTrade(latest_candels, validated):
     print(datetime.now(), "LOG: ML model Loaded", model)
     arranged_candel_data = createNumericCandleDictFromDict(
         c0=latest_candels[0],
-        c1=latest_candels[1], 
-        c2=latest_candels[2], 
-        c3=latest_candels[3], 
-        c4=latest_candels[4],   
+        c1=latest_candels[1],
+        c2=latest_candels[2],
+        c3=latest_candels[3],
+        c4=latest_candels[4],
     )
     print(datetime.now(), "LOG: Candle Data arranged before ML check", arranged_candel_data)
-    df = pd.DataFrame([arranged_candel_data])
+    df_candel = pd.DataFrame([arranged_candel_data])
     #print("LOG: Data Frame of arranged Candle Data", df)
-    scaled_data = scaler.transform(df)
+    scaled_data = scaler.transform(df_candel)
     probab = model.predict_proba(scaled_data)
     print(datetime.now(), "LOG: Profitability Predictions", probab)
     if CHECK_PROFITABLE_PREDICTION:
         profitable_probablity = probab[0][1]
         if profitable_probablity > MIN_PROFIT_PROBA:
-            validated = True 
+            validated = True
         else:
             print(datetime.now(), "LOG: Simple Candle Validation Passed but PROFIT Prediction Validation Failed", MIN_PROFIT_PROBA, profitable_probablity)
             validated = False
@@ -425,16 +463,19 @@ def validateMLTrade(latest_candels, validated):
     return validated
 
 def doSell(exchange, quantity, order, prices):
+    """docstring"""
+    global RUN_COUNT
     executeStopLoss(exchange, quantity, order, prices)
     if STOP_COUNT > 0:
-        run_count += 1
+        RUN_COUNT += 1
     #checkBotPermit(DB_CONFIG)
 
 
 def doStopLossSell(exchange, quantity, order, prices):
+    """docstring"""
     global STOPLOSS_HISTORY
-    dateHour = datetime.now().strftime("%Y-%m-%d-%H")
-    STOPLOSS_HISTORY[dateHour] = 1
+    date_hour = datetime.now().strftime("%Y-%m-%d-%H")
+    STOPLOSS_HISTORY[date_hour] = 1
     history_size = len(STOPLOSS_HISTORY.keys())
     print(datetime.now(), "LOG: stop loss sell called with STOPLOSS_HISTORY: ", STOPLOSS_HISTORY)
     if history_size > PARTIAL_STOP_LOSS_COUNT:
@@ -445,12 +486,13 @@ def doStopLossSell(exchange, quantity, order, prices):
         doSell(exchange, quantity, order, prices)
         time.sleep(LOSS_SLEEP)
         STOPLOSS_HISTORY = {}
-    
+
 
 def getTradeAssetInfo():
-    asset = crypto_list[0]
+    """docstring"""
+    asset = CRYPTO_LIST[0]
     print("argument asset", argument.asset)
-    if TRADE_EXCHANGE != None and TRADE_EXCHANGE != "":
+    if TRADE_EXCHANGE is not None and TRADE_EXCHANGE != "":
         asset["exchange"] = TRADE_EXCHANGE
         asset["asset"] = TRADE_ASSET
 
@@ -458,8 +500,9 @@ def getTradeAssetInfo():
     return asset
 
 def start():
+    """docstring"""
     #print("LOG: New Cycle)
-    global run_count
+    global RUN_COUNT
     asset = getTradeAssetInfo()
     exchange = asset["exchange"]
 
@@ -480,7 +523,7 @@ def start():
     ###################
     ###################
 
-    if order == None:
+    if order is None:
         if PAUSE_BUY:
             print(datetime.now(), "LOG: Pause Buy Flag is ON!!!", current_price)
             return
@@ -489,15 +532,15 @@ def start():
         validated = True
         validated = checkBotPermit(DB_CONFIG)
         latest_candels = []
-        if validated == True:
+        if validated:
             [validated, latest_candels] = permitCandleStick(exchange, DB_CONFIG)     
 
-        if validated == True and ml_config.get("enable_ml_trade") == True:
+        if validated and ml_config.get("enable_ml_trade"):
             validated = validateMLTrade(latest_candels, validated)
 
         # If fixed buy price set, buy and return
-        if db_buy_price != None and current_price < db_buy_price:
-            print(datetime.now(),"LOG: DB BUY Price Set, Buying at fixed price", db_buy_price, current_price)
+        if DB_BUY_PRICE is not None and current_price < DB_BUY_PRICE:
+            print(datetime.now(),"LOG: DB BUY Price Set, Buying at fixed price", DB_BUY_PRICE, current_price)
             createFreshOrder(exchange, current_price, latest_candels)
             return
 
@@ -514,23 +557,23 @@ def start():
             return
         bought_price = order.price
         quantity = roundAssetAmount(order.executed_quantity,exchange)
-        order_id = order.order_id
+        #order_id = order.order_id
 
         prices = getPrices(exchange, bought_price, current_price)
 
         price_order_stop_loss = prices.get("stop_loss")
         price_profit_margin = prices.get("limit_profit")
-        price_profit_stop_loss = prices.get("stop_limit_profit")
+        #price_profit_stop_loss = prices.get("stop_limit_profit")
         partial_stop_loss_price = prices.get("partial_stop_loss_price")
 
         # If fixed sell price set, sell and return
-        if db_sell_price != None and current_price > db_sell_price:
-            print(datetime.now(),"LOG: DB Sell Price Set, Selling at fixed price", db_sell_price, current_price)
+        if DB_SELL_PRICE is not None and current_price > DB_SELL_PRICE:
+            print(datetime.now(),"LOG: DB Sell Price Set, Selling at fixed price", DB_SELL_PRICE, current_price)
             doSell(exchange, quantity, order, prices)
             time.sleep(PROFIT_SLEEP)
             return
 
-        if order.profit_sale_process_flag == False:
+        if not order.profit_sale_process_flag:
             print(datetime.now(), "LOG: Not Open Sale Stop loss Order ", prices)
             
             if current_price < price_order_stop_loss:
@@ -541,7 +584,7 @@ def start():
             
             elif current_price > price_profit_margin:
                 print(datetime.now(), "LOG: Current prices exceeded price_profit_margin; proceed profit stop loss order", current_price, price_order_stop_loss)
-                stop_limit_profit = current_price - (current_price * stop_profit_rate)
+                stop_limit_profit = current_price - (current_price * STOP_PROFIT_RATE)
                 #profit_sell_stop_limit = setStopLoss(exchange, quantity, roundAssetPrice(stop_limit_profit,exchange))
                 #order.profit_sale_txn_id = profit_sell_stop_limit.get("orderId")
                 #order.profit_sale_stop_loss_price = profit_sell_stop_limit.get("price")
@@ -549,7 +592,7 @@ def start():
                 order.profit_sale_process_flag = True
                 sessionCommit()
             
-            elif order.partial_stop_loss_on == True and current_price > partial_stop_loss_price:
+            elif order.partial_stop_loss_on and current_price > partial_stop_loss_price:
                 print(datetime.now(), "LOG: Partial Stop Loss value triggered", current_price, price_order_stop_loss)
                 doSell(exchange, quantity, order, prices)
                 time.sleep(LOSS_SLEEP)
@@ -561,7 +604,7 @@ def start():
             print(datetime.now(), "LOG: Open Sale Stop loss Order Found ", order.id, prices)
             old_profit_sale_stop_loss_price = order.profit_sale_stop_loss_price
 
-            new_profit_sale_stop_loss_price = current_price - (current_price * stop_profit_rate)
+            new_profit_sale_stop_loss_price = current_price - (current_price * STOP_PROFIT_RATE)
 
             if old_profit_sale_stop_loss_price < new_profit_sale_stop_loss_price:
                 print(datetime.now(), "LOG: More opportunity to Extend open Sale Stop loss Order ", old_profit_sale_stop_loss_price, new_profit_sale_stop_loss_price)
@@ -586,24 +629,25 @@ def start():
 
 
 def runBatch():
+    """docstring"""
     global begin_asset
-    global run_count
+    global RUN_COUNT
     run = True
-    if config.get("reset_db") == True:
+    if config.get("reset_db"):
         session.query(Order).filter(Order.sold_flag==False).update({Order.sold_flag:True})
 
     while run:
         getConfigFromDB(argument.asset)
-        if STOP_COUNT > 0 and run_count > STOP_COUNT:
+        if STOP_COUNT > 0 and RUN_COUNT > STOP_COUNT:
             run = False
-            print(datetime.now(), "LOG: Shut down bot coz batch trade loop count limit triggered", run_count)
+            print(datetime.now(), "LOG: Shut down bot coz batch trade loop count limit triggered", RUN_COUNT)
             break
 
         try:
             start()
-        except (binance.exceptions.BinanceAPIException, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:     
-            print(datetime.now(), "Got an ConnectionError exception:" + "\n" + str(e.args) + "\n" + "Ignoring to repeat the attempt later.")
-            print(e)
+        except (binance.exceptions.BinanceAPIException, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as ex:     
+            print(datetime.now(), "Got an ConnectionError exception:" + "\n" + str(ex.args) + "\n" + "Ignoring to repeat the attempt later.")
+            print(ex)
             time.sleep(ERROR_SLEEP)
 
         time.sleep(BOT_FREQUENCY)
@@ -613,11 +657,3 @@ def runBatch():
 
 if config.get("start_bot"):      
     runBatch()
-
-            
-
-
-
-
-
-    
