@@ -52,13 +52,14 @@ REJECT_LAST_2_NEGETIVES = config.get("bot_permit").get("reject_candles").get("La
 REJECT_UNIDENTIFIED = config.get("bot_permit").get("reject_candles").get("Unidentified")
 
 def getCandleStick(symbol = "BTCUSDT", interval=Client.KLINE_INTERVAL_5MINUTE, length =FETCH_LENGTH):
-  #candles = client.get_klines(symbol=symbol, interval=interval)
-  candles = client.get_historical_klines(symbol,interval,length)
+    """docstring"""
+    #candles = client.get_klines(symbol=symbol, interval=interval)
+    candles = client.get_historical_klines(symbol,interval,length)
 
-  return candles
+    return candles
 
-def candle_score(lst_0,lst_1,lst_2, lst3):    
-    
+def candle_score(lst_0,lst_1,lst_2, lst3):
+    """docstring"""
     O_0,H_0,L_0,C_0=lst_0[0],lst_0[1],lst_0[2],lst_0[3]
     O_1,H_1,L_1,C_1=lst_1[0],lst_1[1],lst_1[2],lst_1[3]
     O_2,H_2,L_2,C_2=lst_2[0],lst_2[1],lst_2[2],lst_2[3]
@@ -165,6 +166,7 @@ def candle_score(lst_0,lst_1,lst_2, lst3):
     return candle_score,strCandle
 
 def classifyCandles(df):
+    """docstring"""
     #df_candle=first_letter_upper(df)
     df_candle=df.copy()
     df_candle['candle_score']=0
@@ -187,309 +189,310 @@ def classifyCandles(df):
 
 
 def getCandleAndClassify(symbol = symbol, interval = KLINE_INTERVAL_5MINUTE):
-  candles = getCandleStick(symbol, interval)
-  df = pd.DataFrame(candles,
-    columns=['Open_time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close_Time', 'Quote_Asset_Volume', 'Number_Of_Trades', 'Taker_Buy_Base_Asset_Volume', 'Taker_Buy_Quote_Asset_Volume', 'Ignore'],
-    dtype='float64')
-  # extract OHLC 
-  df=classifyCandles(df)
-  df['signal']=np.where(df['candle_cumsum']>1,1,-1)
-  df['signal2']=np.where(df['signal']==df['signal'].shift(1),0,df['signal']) 
-  df['Open_time'] = (df['Open_time'].astype(int))/1000
-  df['Close_Time'] = (df['Close_Time'].astype(int))/1000
-  #print(df["Open_time"])
-  df['Open_time'] = pd.to_datetime(df['Open_time'],unit="s")
-  df['Close_Time'] = pd.to_datetime(df['Close_Time'],unit="s")
-  jst = pytz.timezone('Asia/Tokyo')
-  df['Open_time'] = df['Open_time'].dt.tz_localize(pytz.utc).dt.tz_convert(jst)
-  df['Close_Time'] = df['Close_Time'].dt.tz_localize(pytz.utc).dt.tz_convert(jst)
-  
-  df['Open_time_str'] = df['Open_time'].apply(lambda x: x.strftime(DATETIME_FORMAT))
-  df['Close_Time_str'] = df['Close_Time'].apply(lambda x: x.strftime(DATETIME_FORMAT))
-  #print(df["Open_time"])
+    """docstring"""
+    candles = getCandleStick(symbol, interval)
+    df = pd.DataFrame(candles,
+        columns=['Open_time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close_Time', 'Quote_Asset_Volume', 'Number_Of_Trades', 'Taker_Buy_Base_Asset_Volume', 'Taker_Buy_Quote_Asset_Volume', 'Ignore'],
+        dtype='float64')
+    # extract OHLC 
+    df=classifyCandles(df)
+    df['signal']=np.where(df['candle_cumsum']>1,1,-1)
+    df['signal2']=np.where(df['signal']==df['signal'].shift(1),0,df['signal']) 
+    df['Open_time'] = (df['Open_time'].astype(int))/1000
+    df['Close_Time'] = (df['Close_Time'].astype(int))/1000
+    #print(df["Open_time"])
+    df['Open_time'] = pd.to_datetime(df['Open_time'],unit="s")
+    df['Close_Time'] = pd.to_datetime(df['Close_Time'],unit="s")
+    jst = pytz.timezone('Asia/Tokyo')
+    df['Open_time'] = df['Open_time'].dt.tz_localize(pytz.utc).dt.tz_convert(jst)
+    df['Close_Time'] = df['Close_Time'].dt.tz_localize(pytz.utc).dt.tz_convert(jst)
 
-  return df
+    df['Open_time_str'] = df['Open_time'].apply(lambda x: x.strftime(DATETIME_FORMAT))
+    df['Close_Time_str'] = df['Close_Time'].apply(lambda x: x.strftime(DATETIME_FORMAT))
+    #print(df["Open_time"])
+
+    return df
 
 
 def runValidations(current, return_data):
-  if REJECT_DOJI and "doji" in current.candle_pattern:
-    print("KLINE_LOG: STOP doji Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False
-  elif REJECT_EVENING_STAR and "evening_star" in current.candle_pattern:
-    print("KLINE_LOG: STOP evening_star Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False  
-  elif REJECT_MORNING_STAR and "morning_star" in current.candle_pattern:
-    print("KLINE_LOG: STOP morning_star Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_SHOOTING_STAR_BEARISH and "shooting_Star_bearish" in current.candle_pattern:
-    print("KLINE_LOG: STOP shooting_Star_bearish Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_SHOOTING_STAR_BULLISH and "shooting_Star_bullish" in current.candle_pattern:
-    print("KLINE_LOG: STOP shooting_Star_bullish Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_HAMMER and "hammer" in current.candle_pattern:
-    print("KLINE_LOG: STOP hammer Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False  
-  elif REJECT_INVERTED_HAMMER and "inverted_hammer" in current.candle_pattern:
-    print("KLINE_LOG: STOP inverted_hammer Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_BEARISH_HARAMI and "bearish_harami" in current.candle_pattern:
-    print("KLINE_LOG: STOP bearish_harami Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False
-  elif REJECT_BULLISH_HARAMI and "Bullish_Harami" in current.candle_pattern:
-    print("KLINE_LOG: STOP Bullish_Harami Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False
-  elif REJECT_BEARISH_ENGULFING and "Bearish_Engulfing" in current.candle_pattern:
-    print("KLINE_LOG: STOP Bearish_Engulfing Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_BULLISH_ENGULFING and "Bullish_Engulfing" in current.candle_pattern:
-    print("KLINE_LOG: STOP Bullish_Engulfing Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_BULLISH_REVERSAL and "bullish_reversal" in current.candle_pattern:
-    print("KLINE_LOG: STOP bullish_reversal Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_BEARISH_REVERSAL and "bearish_reversal" in current.candle_pattern:
-    print("KLINE_LOG: STOP bearish_reversal Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_PIERCING_LINE_BULLISH and "Piercing_Line_bullish" in current.candle_pattern:
-    print("KLINE_LOG: STOP bullish_reversal Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_HANGING_MAN_BEARISH and "Hanging_Man_bearish" in current.candle_pattern:
-    print("KLINE_LOG: STOP Hanging_Man_bearish Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_HANGING_MAN_BULLISH and "Hanging_Man_bullish" in current.candle_pattern:
-    print("KLINE_LOG: STOP Hanging_Man_bullish Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False 
-  elif REJECT_UNIDENTIFIED and current.candle_pattern == "":
-    print("KLINE_LOG: STOP Unidentified Candle Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False
-  elif REJECT_LAST_2_NEGETIVES and "Last_2_Negetives" in current.candle_pattern:
-    print("KLINE_LOG: STOP Last 2 Negetives Pattern Detected!!", return_data)
-    time.sleep(INVALID_CANDLE_SLEEP)
-    return False
+    """docstring"""
+    if REJECT_DOJI and "doji" in current.candle_pattern:
+        print("KLINE_LOG: STOP doji Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_EVENING_STAR and "evening_star" in current.candle_pattern:
+        print("KLINE_LOG: STOP evening_star Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_MORNING_STAR and "morning_star" in current.candle_pattern:
+        print("KLINE_LOG: STOP morning_star Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_SHOOTING_STAR_BEARISH and "shooting_Star_bearish" in current.candle_pattern:
+        print("KLINE_LOG: STOP shooting_Star_bearish Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_SHOOTING_STAR_BULLISH and "shooting_Star_bullish" in current.candle_pattern:
+        print("KLINE_LOG: STOP shooting_Star_bullish Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_HAMMER and "hammer" in current.candle_pattern:
+        print("KLINE_LOG: STOP hammer Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_INVERTED_HAMMER and "inverted_hammer" in current.candle_pattern:
+        print("KLINE_LOG: STOP inverted_hammer Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_BEARISH_HARAMI and "bearish_harami" in current.candle_pattern:
+        print("KLINE_LOG: STOP bearish_harami Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_BULLISH_HARAMI and "Bullish_Harami" in current.candle_pattern:
+        print("KLINE_LOG: STOP Bullish_Harami Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_BEARISH_ENGULFING and "Bearish_Engulfing" in current.candle_pattern:
+        print("KLINE_LOG: STOP Bearish_Engulfing Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_BULLISH_ENGULFING and "Bullish_Engulfing" in current.candle_pattern:
+        print("KLINE_LOG: STOP Bullish_Engulfing Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_BULLISH_REVERSAL and "bullish_reversal" in current.candle_pattern:
+        print("KLINE_LOG: STOP bullish_reversal Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_BEARISH_REVERSAL and "bearish_reversal" in current.candle_pattern:
+        print("KLINE_LOG: STOP bearish_reversal Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_PIERCING_LINE_BULLISH and "Piercing_Line_bullish" in current.candle_pattern:
+        print("KLINE_LOG: STOP bullish_reversal Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_HANGING_MAN_BEARISH and "Hanging_Man_bearish" in current.candle_pattern:
+        print("KLINE_LOG: STOP Hanging_Man_bearish Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_HANGING_MAN_BULLISH and "Hanging_Man_bullish" in current.candle_pattern:
+        print("KLINE_LOG: STOP Hanging_Man_bullish Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_UNIDENTIFIED and current.candle_pattern == "":
+        print("KLINE_LOG: STOP Unidentified Candle Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
+    elif REJECT_LAST_2_NEGETIVES and "Last_2_Negetives" in current.candle_pattern:
+        print("KLINE_LOG: STOP Last 2 Negetives Pattern Detected!!", return_data)
+        time.sleep(INVALID_CANDLE_SLEEP)
+        return False
 
-  return True
+    return True
 
 
 def saveCandles(return_data):
-  for item in return_data:
-    new = Candle(
-      Open_time_str = item.get("Open_time_str"),
-      Open = item.get("Open"),
-      High = item.get("High"),
-      Low = item.get("Low"),
-      Close = item.get("Close"),
-      Volume = item.get("Volume"),
-      Close_Time_str = item.get("Close_Time_str"),
-      Quote_Asset_Volume = item.get("Quote_Asset_Volume"),
-      Number_Of_Trades = item.get("Number_Of_Trades"),
-      Taker_Buy_Base_Asset_Volume = item.get("Taker_Buy_Base_Asset_Volume"),
-      Taker_Buy_Quote_Asset_Volume = item.get("Taker_Buy_Quote_Asset_Volume"),
-      Ignore = item.get("Ignore"),
-      candle_pattern = item.get("candle_pattern"),
-      candle_score = item.get("candle_score"),
-      candle_cumsum = item.get("candle_cumsum"),
-      signal = item.get("signal"),
-      signal2 = item.get("signal2")
-    )
-
-    addDataToDB(session, new)
-    item["id"] = new.id
-
-  return return_data
+    """docstring"""
+    for item in return_data:
+        new = Candle(
+            Open_time_str = item.get("Open_time_str"),
+            Open = item.get("Open"),
+            High = item.get("High"),
+            Low = item.get("Low"),
+            Close = item.get("Close"),
+            Volume = item.get("Volume"),
+            Close_Time_str = item.get("Close_Time_str"),
+            Quote_Asset_Volume = item.get("Quote_Asset_Volume"),
+            Number_Of_Trades = item.get("Number_Of_Trades"),
+            Taker_Buy_Base_Asset_Volume = item.get("Taker_Buy_Base_Asset_Volume"),
+            Taker_Buy_Quote_Asset_Volume = item.get("Taker_Buy_Quote_Asset_Volume"),
+            Ignore = item.get("Ignore"),
+            candle_pattern = item.get("candle_pattern"),
+            candle_score = item.get("candle_score"),
+            candle_cumsum = item.get("candle_cumsum"),
+            signal = item.get("signal"),
+            signal2 = item.get("signal2")
+        )
+        addDataToDB(session, new)
+        item["id"] = new.id
+    return return_data
 
 
 def runRulesValidations(latest_signals):
-  c0 = latest_signals.iloc[0]
-  c1 = latest_signals.iloc[1]
-  c2 = latest_signals.iloc[2]
-  c3 = latest_signals.iloc[3]
-  now = datetime.now()
-  minute = now.minute
-  patterns = {}
-  patterns["pattern_1"] = ("Bearish_Engulfing" in c1.candle_pattern)
-  patterns["pattern_2"] = ("bearish_harami" in c1.candle_pattern)
-  patterns["pattern_3"] = ("inverted_hammer" in c1.candle_pattern)
-  patterns["pattern_4"] = ("Bullish_Harami" in c2.candle_pattern)
-  patterns["pattern_5"] = ("inverted_hammer" in c2.candle_pattern)
- 
-  valid_candle = patterns["pattern_1"] or patterns["pattern_2"] or patterns["pattern_3"] or patterns["pattern_4"] or patterns["pattern_5"]
+    """docstring"""
+    c0 = latest_signals.iloc[0]
+    c1 = latest_signals.iloc[1]
+    c2 = latest_signals.iloc[2]
+    c3 = latest_signals.iloc[3]
+    now = datetime.now()
+    minute = now.minute
+    patterns = {}
+    patterns["pattern_1"] = ("Bearish_Engulfing" in c1.candle_pattern)
+    patterns["pattern_2"] = ("bearish_harami" in c1.candle_pattern)
+    patterns["pattern_3"] = ("inverted_hammer" in c1.candle_pattern)
+    patterns["pattern_4"] = ("Bullish_Harami" in c2.candle_pattern)
+    patterns["pattern_5"] = ("inverted_hammer" in c2.candle_pattern)
+    
+    valid_candle = patterns["pattern_1"] or patterns["pattern_2"] or patterns["pattern_3"] or patterns["pattern_4"] or patterns["pattern_5"]
 
-  if valid_candle == False:
-    print(datetime.now(), "KLINE_LOG: Candle validation Failed", patterns )
+    if valid_candle == False:
+        print(datetime.now(), "KLINE_LOG: Candle validation Failed", patterns )
+        return False
+    else:
+        print(datetime.now(), "KLINE_LOG: Candle validation Passed", patterns )
+
+    rules = {}
+    rules["rule1_1"] = (c0.Taker_Buy_Quote_Asset_Volume) > 5582057.75
+    rules["rule1_2"] = (c3.Quote_Asset_Volume) > 84760696
+    rules["rule1_3"] = (c0.Volume) <= 1577.309
+    rules["rule1_4"] = (c3.Number_Of_Trades) <= 73378.0
+    rules["rule1_5"] = True
+
+    rules["rule2_1"] = (c2.Taker_Buy_Quote_Asset_Volume > 5308098.5)
+    rules["rule2_2"] = (c2.Number_Of_Trades) > 12675.5
+    rules["rule2_3"] = (c1.Taker_Buy_Base_Asset_Volume) <= 258.521
+    rules["rule2_4"] = (c1.Taker_Buy_Base_Asset_Volume) > 215.756
+    rules["rule2_5"] = (c2.Number_Of_Trades) <= 20337
+
+    valid_rule1 = (
+        rules["rule1_1"] and
+        rules["rule1_2"] and
+        rules["rule1_3"] and
+        rules["rule1_4"] and
+        rules["rule1_5"]
+    )
+
+    valid_rule2 = (
+        rules["rule2_1"] and
+        rules["rule2_2"] and
+        rules["rule2_3"] and
+        rules["rule2_4"] and
+        rules["rule2_5"]
+    )
+
+    print(datetime.now(), "KLINE_LOG: Rules validation detail log", rules )
+    #print(datetime.now(), "KLINE_LOG: Each Parent Rule Status log", valid_rule1, valid_rule2)
+
+    if valid_rule1 or valid_rule2:
+        print(datetime.now(), "KLINE_LOG: Rules validation success",valid_rule1, valid_rule2)
+        return True
+
     return False
-  else:
-    print(datetime.now(), "KLINE_LOG: Candle validation Passed", patterns )
-
-  rules = {}
-  rules["rule1_1"] = (c0.Taker_Buy_Quote_Asset_Volume) > 5582057.75
-  rules["rule1_2"] = (c3.Quote_Asset_Volume) > 84760696
-  rules["rule1_3"] = (c0.Volume) <= 1577.309
-  rules["rule1_4"] = (c3.Number_Of_Trades) <= 73378.0
-  rules["rule1_5"] = True
-
-  rules["rule2_1"] = (c2.Taker_Buy_Quote_Asset_Volume > 5308098.5)
-  rules["rule2_2"] = (c2.Number_Of_Trades) > 12675.5
-  rules["rule2_3"] = (c1.Taker_Buy_Base_Asset_Volume) <= 258.521
-  rules["rule2_4"] = (c1.Taker_Buy_Base_Asset_Volume) > 215.756
-  rules["rule2_5"] = (c2.Number_Of_Trades) <= 20337
-
-  valid_rule1 = (
-    rules["rule1_1"] and
-    rules["rule1_2"] and
-    rules["rule1_3"] and
-    rules["rule1_4"] and
-    rules["rule1_5"]
-  )
-
-  valid_rule2 = (
-    rules["rule2_1"] and
-    rules["rule2_2"] and
-    rules["rule2_3"] and
-    rules["rule2_4"] and
-    rules["rule2_5"]
-  )
-
-  print(datetime.now(), "KLINE_LOG: Rules validation detail log", rules )
-  #print(datetime.now(), "KLINE_LOG: Each Parent Rule Status log", valid_rule1, valid_rule2)
-
-  if valid_rule1 or valid_rule2:
-    print(datetime.now(), "KLINE_LOG: Rules validation success",valid_rule1, valid_rule2)
-    return True
-
-  return False
 
 def runRulesValidations2(latest_signals):
-  c0 = latest_signals.iloc[0]
-  c1 = latest_signals.iloc[1]
-  c2 = latest_signals.iloc[2]
-  c3 = latest_signals.iloc[3]
+    """docstring"""
+    c0 = latest_signals.iloc[0]
+    c1 = latest_signals.iloc[1]
+    c2 = latest_signals.iloc[2]
+    c3 = latest_signals.iloc[3]
 
-  patterns = {}
-  patterns["pattern_1"] = ("Bearish_Engulfing" in c1.candle_pattern)
-  patterns["pattern_2"] = ("bearish_harami" in c1.candle_pattern)
-  #patterns["pattern_3"] = ("inverted_hammer" in c1.candle_pattern)
-  patterns["pattern_3"] = False
-  patterns["pattern_4"] = ("Bullish_Harami" in c2.candle_pattern)
-  patterns["pattern_5"] = ("inverted_hammer" in c2.candle_pattern)
-  
-  valid_candle = patterns["pattern_1"] or patterns["pattern_2"] or patterns["pattern_3"] or patterns["pattern_4"] or patterns["pattern_5"]
+    patterns = {}
+    patterns["pattern_1"] = ("Bearish_Engulfing" in c1.candle_pattern)
+    patterns["pattern_2"] = ("bearish_harami" in c1.candle_pattern)
+    #patterns["pattern_3"] = ("inverted_hammer" in c1.candle_pattern)
+    patterns["pattern_3"] = False
+    patterns["pattern_4"] = ("Bullish_Harami" in c2.candle_pattern)
+    patterns["pattern_5"] = ("inverted_hammer" in c2.candle_pattern)
+    
+    valid_candle = patterns["pattern_1"] or patterns["pattern_2"] or patterns["pattern_3"] or patterns["pattern_4"] or patterns["pattern_5"]
 
-  if valid_candle == False:
-    print(datetime.now(), "KLINE_LOG: Candle validation Failed", patterns )
+    if valid_candle == False:
+        print(datetime.now(), "KLINE_LOG: Candle validation Failed", patterns )
+        return False
+    else:
+        print(datetime.now(), "KLINE_LOG: Candle validation Passed", patterns )
+
+
+    rules = {}
+    rules["rule1_1"] = (c0.Taker_Buy_Quote_Asset_Volume) <= 9521354
+    rules["rule1_2"] = (c0.Number_Of_Trades) > 6994.5
+    rules["rule1_3"] = not ("inverted_hammer" in c1.candle_pattern)
+    rules["rule1_4"] = (c2.Number_Of_Trades) > 10961.5
+    rules["rule1_5"] = True
+
+    valid_rule1 = (
+        rules["rule1_1"] and
+        rules["rule1_2"] and
+        rules["rule1_3"] and
+        rules["rule1_4"] and
+        rules["rule1_5"]
+    )
+
+    print(datetime.now(), "KLINE_LOG: Rules validation detail log", rules )
+    #print(datetime.now(), "KLINE_LOG: Each Parent Rule Status log", valid_rule1, valid_rule2)
+
+    if valid_rule1:
+        print(datetime.now(), "KLINE_LOG: Rules validation success",valid_rule1)
+        return True
+
     return False
-  else:
-    print(datetime.now(), "KLINE_LOG: Candle validation Passed", patterns )
-
-
-  rules = {}
-  rules["rule1_1"] = (c0.Taker_Buy_Quote_Asset_Volume) <= 9521354
-  rules["rule1_2"] = (c0.Number_Of_Trades) > 6994.5
-  rules["rule1_3"] = not ("inverted_hammer" in c1.candle_pattern)
-  rules["rule1_4"] = (c2.Number_Of_Trades) > 10961.5
-  rules["rule1_5"] = True
-
-  valid_rule1 = (
-    rules["rule1_1"] and
-    rules["rule1_2"] and
-    rules["rule1_3"] and
-    rules["rule1_4"] and
-    rules["rule1_5"]
-  )
-
-  print(datetime.now(), "KLINE_LOG: Rules validation detail log", rules )
-  #print(datetime.now(), "KLINE_LOG: Each Parent Rule Status log", valid_rule1, valid_rule2)
-
-  if valid_rule1:
-    print(datetime.now(), "KLINE_LOG: Rules validation success",valid_rule1)
-    return True
-
-  return False
 
 def runRulesValidations3(latest_signals, db_config):
-  print("KLINE LOG: DB config", db_config)
-  c0 = latest_signals.iloc[0]
-  c1 = latest_signals.iloc[1]
-  c2 = latest_signals.iloc[2]
-  c3 = latest_signals.iloc[3]
+    """docstring"""
+    print("KLINE LOG: DB config", db_config)
+    c0 = latest_signals.iloc[0]
+    c1 = latest_signals.iloc[1]
+    c2 = latest_signals.iloc[2]
+    c3 = latest_signals.iloc[3]
 
-  db_valid_pattern1 = db_config["valid_pattern1"]
-  db_valid_pattern2 = db_config["valid_pattern2"]
-  db_valid_pattern3 = db_config["valid_pattern3"]
-  db_valid_pattern4 = db_config["valid_pattern4"]
-  db_valid_pattern5 = db_config["valid_pattern5"]
-  pattern_detect_time = db_config["pattern_detect_time"] if db_config["pattern_detect_time"] else 8
-  
+    db_valid_pattern1 = db_config["valid_pattern1"]
+    db_valid_pattern2 = db_config["valid_pattern2"]
+    db_valid_pattern3 = db_config["valid_pattern3"]
+    db_valid_pattern4 = db_config["valid_pattern4"]
+    db_valid_pattern5 = db_config["valid_pattern5"]
+    pattern_detect_time = db_config["pattern_detect_time"] if db_config["pattern_detect_time"] else 8
+    
 
-  now = datetime.now()
-  minute = now.minute
-  patterns = {}
+    now = datetime.now()
+    minute = now.minute
+    patterns = {}
 
-  patterns["pattern_1"] = (db_valid_pattern1 in c0.candle_pattern)
-  patterns["pattern_2"] = (minute%15) > pattern_detect_time
-  patterns["pattern_3"] = True
-  patterns["pattern_4"] = True
-  patterns["pattern_5"] = True
+    patterns["pattern_1"] = (db_valid_pattern1 in c0.candle_pattern)
+    patterns["pattern_2"] = (minute%15) > pattern_detect_time
+    patterns["pattern_3"] = True
+    patterns["pattern_4"] = True
+    patterns["pattern_5"] = True
 
-  valid_candle = patterns["pattern_1"] and patterns["pattern_2"] and patterns["pattern_3"] and patterns["pattern_4"] and patterns["pattern_5"]
-  if valid_candle == False:
-    print(datetime.now(), "KLINE_LOG: Candle validation Failed", patterns )
-    return False
-  else:
-    print(datetime.now(), "KLINE_LOG: Candle validation Passed", patterns )
-    return True
+    valid_candle = patterns["pattern_1"] and patterns["pattern_2"] and patterns["pattern_3"] and patterns["pattern_4"] and patterns["pattern_5"]
+    if valid_candle == False:
+        print(datetime.now(), "KLINE_LOG: Candle validation Failed", patterns )
+        return False
+    else:
+        print(datetime.now(), "KLINE_LOG: Candle validation Passed", patterns )
+        return True
 
 
 def permitCandleStick(exchange, db_config):
-  df = getCandleAndClassify(exchange)
+    """docstring"""
+    df = getCandleAndClassify(exchange)
 
-  latest_signals = df.nlargest(5,"Open_time")
-  current = latest_signals.iloc[0]
+    latest_signals = df.nlargest(5,"Open_time")
+    current = latest_signals.iloc[0]
 
-  #return_data = latest_signals[LOG_ELEMENTS]
-  log_elements = latest_signals[LOG_ELEMENTS]
-  log_elements = log_elements.to_dict('records')
-  return_data = latest_signals.to_dict('records')
+    #return_data = latest_signals[LOG_ELEMENTS]
+    log_elements = latest_signals[LOG_ELEMENTS]
+    log_elements = log_elements.to_dict('records')
+    return_data = latest_signals.to_dict('records')
 
-  if VALIDATE_CANDLE_RULES == True:
-    print(datetime.now(),"KLINE_LOG: Latest Signals", return_data)
-    validPerRules = runRulesValidations3(latest_signals, db_config)
-    if validPerRules == True:
-      return_data = saveCandles(return_data)
-      return [True, return_data]
-    return [False, return_data]
+    if VALIDATE_CANDLE_RULES == True:
+        print(datetime.now(),"KLINE_LOG: Latest Signals", return_data)
+        validPerRules = runRulesValidations3(latest_signals, db_config)
+        if validPerRules == True:
+            return_data = saveCandles(return_data)
+            return [True, return_data]
+        return [False, return_data]
 
-  if VALIDATE_CANDLESTICK == False:
+    if VALIDATE_CANDLESTICK == False:
+        return_data = saveCandles(return_data)
+        return [True, return_data]
+
+    if runValidations(current, log_elements) == False:
+        return [False, return_data]
+
     return_data = saveCandles(return_data)
+    pattern = return_data[0]["candle_pattern"] if return_data[0]["candle_pattern"] != "" else "N/A"
+
+    print("KLINE_LOG: latest_signals[LOG_ELEMENTS]", pattern,log_elements)
+
     return [True, return_data]
-  
-  if runValidations(current, log_elements) == False:
-    return [False, return_data]
-
-  return_data = saveCandles(return_data)
-  pattern = return_data[0]["candle_pattern"] if return_data[0]["candle_pattern"] != "" else "N/A"
-  
-  print("KLINE_LOG: latest_signals[LOG_ELEMENTS]", pattern,log_elements)
-
-  return [True, return_data]
-
-  
-
-
