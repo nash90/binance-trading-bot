@@ -22,7 +22,7 @@ class Order(Base):
   stop_limit_price = Column('stop_limit_price', Numeric)
   executed_quantity = Column('executed_quantity', Numeric)
   partial_stop_loss_price = Column('partial_stop_loss_price', Numeric)
-  partial_stop_loss_on = Column('partial_stop_loss_on', Boolean, default=True)
+  partial_stop_loss_on = Column('partial_stop_loss_on', Boolean, default=False)
   orig_quantity = Column('orig_quantity', Numeric)
   buy_cummulative_quote_qty = Column('buy_cummulative_quote_qty', Numeric)
   sold_cummulative_quote_qty = Column('sold_cummulative_quote_qty', Numeric)
