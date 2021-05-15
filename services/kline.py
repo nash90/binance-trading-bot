@@ -3,6 +3,7 @@ import numpy as np
 #import matplotlib.pyplot as plt
 import pytz
 import time
+from scipy.stats import linregress
 
 from binance.client import Client
 from binance.enums import *
@@ -319,6 +320,18 @@ def saveCandles(return_data):
     return return_data
 
 
+def getTrend(df=None, can_num=0, exchange=""):
+    """docstring"""
+    if df is None:
+        df = getCandleAndClassify(exchange)
+    latest_signals = df.nlargest(can_num,"Open_time")
+    latest_signals["mid"] = latest_signals.apply(lambda row: (row.Open + row.Close)/2, axis=1)
+    x = latest_signals["mid"].index.tolist()[::-1]
+    y = latest_signals["mid"].tolist()[::-1]
+    slope, intercept, r_value, p_value, std_err = linregress(x, y)
+
+    return slope
+
 def runRulesValidations(latest_signals):
     """docstring"""
     c0 = latest_signals.iloc[0]
@@ -428,7 +441,7 @@ def runRulesValidations2(latest_signals):
 
     return False
 
-def runRulesValidations3(latest_signals, db_config):
+def runRulesValidations3(latest_signals, db_config, df):
     """docstring"""
     print("KLINE LOG: DB config", db_config)
     c0 = latest_signals.iloc[0]
@@ -447,19 +460,29 @@ def runRulesValidations3(latest_signals, db_config):
     now = datetime.now()
     minute = now.minute
     patterns = {}
+    is_stable_time = (minute%15) > pattern_detect_time
+    is_bullish_trend = getTrend(df, 5) > 0
+    is_bearish_trend = getTrend(df, 5) < 0
+    patterns["pattern_1"] = (
+        is_stable_time and
+        is_bullish_trend and
+        (db_valid_pattern1 in c0.candle_pattern)
+    )
+    patterns["pattern_2"] = (
+        is_stable_time and
+        is_bearish_trend and
+        (db_valid_pattern2 in c0.candle_pattern)
+    )
+    patterns["pattern_3"] = False
+    patterns["pattern_4"] = False
+    patterns["pattern_5"] = False
 
-    patterns["pattern_1"] = (db_valid_pattern1 in c0.candle_pattern)
-    patterns["pattern_2"] = (minute%15) > pattern_detect_time
-    patterns["pattern_3"] = True
-    patterns["pattern_4"] = True
-    patterns["pattern_5"] = True
-
-    valid_candle = patterns["pattern_1"] and patterns["pattern_2"] and patterns["pattern_3"] and patterns["pattern_4"] and patterns["pattern_5"]
+    valid_candle = patterns["pattern_1"] or patterns["pattern_2"] or patterns["pattern_3"] or patterns["pattern_4"] or patterns["pattern_5"]
     if valid_candle == False:
-        print(datetime.now(), "KLINE_LOG: Candle validation Failed", patterns )
+        print(datetime.now(), "KLINE_LOG: Candle validation Failed: pattern, stable_time, is_bullish", patterns, is_stable_time, is_bullish_trend )
         return False
     else:
-        print(datetime.now(), "KLINE_LOG: Candle validation Passed", patterns )
+        print(datetime.now(), "KLINE_LOG: Candle validation Passed: pattern, stable_time, is_bullish", patterns, is_stable_time, is_bullish_trend )
         return True
 
 
@@ -477,7 +500,7 @@ def permitCandleStick(exchange, db_config):
 
     if VALIDATE_CANDLE_RULES == True:
         print(datetime.now(),"KLINE_LOG: Latest Signals", return_data)
-        validPerRules = runRulesValidations3(latest_signals, db_config)
+        validPerRules = runRulesValidations3(latest_signals, db_config, df)
         if validPerRules == True:
             return_data = saveCandles(return_data)
             return [True, return_data]
