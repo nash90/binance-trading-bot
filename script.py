@@ -343,7 +343,7 @@ def start():
     ## get order of unsold asset from DB
     orders = session.query(Order).filter(
         Order.bought_flag).filter(
-        not Order.sold_flag).filter(
+        Order.sold_flag == False).filter(
         Order.symbol == exchange
         ).all()
 
@@ -468,7 +468,7 @@ def runBatch():
     global RUN_COUNT
     run = True
     if config.get("reset_db"):
-        session.query(Order).filter(not Order.sold_flag).update({Order.sold_flag:True})
+        session.query(Order).filter(Order.sold_flag == False).update({Order.sold_flag:True})
 
     while run:
         getConfigFromDB(argument.asset)
@@ -489,5 +489,5 @@ def runBatch():
     session.close()
 
 
-if config.get("start_bot"):
-    runBatch()
+#if config.get("start_bot"):
+#    runBatch()
