@@ -34,7 +34,7 @@ class Order(Base):
   bought_flag = Column('bought_flag', Boolean, default=False)
   sold_flag = Column('sold_flag', Boolean, default=False)
   profit_sale_process_flag = Column('profit_sale_process_flag', Boolean, default=False)
-  all_prices = Column('all_prices', String(200), default="")
+  all_prices = Column('all_prices', String(2000), default="")
   fills = Column('fills', String(500), default="")
   logs = Column('logs', String(2000), default="")
   candle_pattern0 = Column('candle_pattern0', String(500), default="")
