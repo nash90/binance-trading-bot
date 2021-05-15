@@ -443,7 +443,7 @@ def runRulesValidations2(latest_signals):
 
 def runRulesValidations3(latest_signals, db_config, df):
     """docstring"""
-    print("KLINE LOG: DB config", db_config)
+    print("KLINE LOG: DB config", db_config["id"])
     c0 = latest_signals.iloc[0]
     c1 = latest_signals.iloc[1]
     c2 = latest_signals.iloc[2]
@@ -501,9 +501,9 @@ def permitCandleStick(exchange, db_config):
     log_elements = latest_signals[LOG_ELEMENTS]
     log_elements = log_elements.to_dict('records')
     return_data = latest_signals.to_dict('records')
-
+    candle_label_list = [ item["candle_pattern"] for item in return_data ]
     if VALIDATE_CANDLE_RULES == True:
-        print(datetime.now(),"KLINE_LOG: Latest Signals", return_data)
+        print(datetime.now(),"KLINE_LOG: Latest Signals", candle_label_list)
         validPerRules = runRulesValidations3(latest_signals, db_config, df)
         if validPerRules == True:
             return_data = saveCandles(return_data)
