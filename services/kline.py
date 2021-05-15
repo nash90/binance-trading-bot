@@ -473,7 +473,11 @@ def runRulesValidations3(latest_signals, db_config, df):
         is_bearish_trend and
         (db_valid_pattern2 in c0.candle_pattern)
     )
-    patterns["pattern_3"] = False
+    patterns["pattern_3"] = (
+        is_stable_time and
+        getTrend(df, 7) < 0 and
+        (db_valid_pattern3 in c0.candle_pattern)
+    )
     patterns["pattern_4"] = False
     patterns["pattern_5"] = False
 
