@@ -489,5 +489,5 @@ def runBatch():
     session.close()
 
 
-#if config.get("start_bot"):
-#    runBatch()
+if config.get("start_bot"):
+    runBatch()
