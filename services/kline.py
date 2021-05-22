@@ -467,7 +467,7 @@ def runRulesValidations3(latest_signals, db_config, df):
         is_stable_time and
         is_bullish_trend and
         (db_valid_pattern1 in c0.candle_pattern) and
-        not ('bearish_harami' in c1.candle_pattern)
+        not ('bearish_harami' in c1.candle_pattern) 
     )
     patterns["pattern_2"] = (
         is_stable_time and
