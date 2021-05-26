@@ -21,6 +21,8 @@ from models.mock import getMarketBuyMock
 from models.mock import getMarketSellMock
 from services.service import checkBotPermit
 from services.kline import permitCandleStick
+from services.kline import getCandleAndClassify
+from services.kline import getTrend
 from configs.ml_config import ml_config
 from util.utility import loadObject
 from util.utility import createNumericCandleDictFromDict
@@ -204,10 +206,11 @@ def executeStopLoss(exchange, quantity, order, prices):
     sessionCommit()
 
 
-def createFreshOrder(exchange, current_price, latest_candels):
+def createFreshOrder(exchange, current_price, latest_candels, data_f):
     """docstring"""
     ammount = BUY_SIZE / current_price
     ammount = roundAssetAmount(ammount, exchange)
+    trend = getTrend(data_f, 4)
 
     if MOCK_TRADE:
         new_order = getMarketBuyMock(exchange, current_price, ammount, ammount, BUY_SIZE)
@@ -241,10 +244,11 @@ def createFreshOrder(exchange, current_price, latest_candels):
         executed_quantity=roundAssetAmount(float(new_order.get("executedQty")),exchange),
         server_side_status= new_order.get("status"),
         bought_flag=True,
+        trend=trend,
         fills = json.dumps(fills)[:499],
         created_date = datetime.now(),
         buy_cummulative_quote_qty = new_order.get("cummulativeQuoteQty"),
-        #logs = json.dumps(latest_candels)[:2000],
+        # logs = json.dumps(logs)[:2000],
         candle_pattern0 = candle_pattern0,
         candle_pattern1 = candle_pattern1,
         candle_pattern2 = candle_pattern2,
@@ -308,8 +312,11 @@ def doSell(exchange, quantity, order, prices):
 def doStopLossSell(exchange, quantity, order, prices):
     """docstring"""
     global STOPLOSS_HISTORY
-    date_hour = datetime.now().strftime("%Y-%m-%d-%H")
-    STOPLOSS_HISTORY[date_hour] = 1
+    now = datetime.now()
+    date_half_hour = now.strftime("%Y-%m-%d-%H-") + str(now.minute//30)
+    #date_hour = datetime.now().strftime("%Y-%m-%d-%H")
+    #STOPLOSS_HISTORY[date_hour] = 1
+    STOPLOSS_HISTORY[date_half_hour] = 1
     history_size = len(STOPLOSS_HISTORY.keys())
     print(datetime.now(), "LOG: stop loss sell called with STOPLOSS_HISTORY: ", STOPLOSS_HISTORY)
     if history_size > PARTIAL_STOP_LOSS_COUNT:
@@ -366,8 +373,9 @@ def start():
         validated = True
         validated = checkBotPermit(DB_CONFIG)
         latest_candels = []
+        data_f = getCandleAndClassify(exchange)
         if validated:
-            [validated, latest_candels] = permitCandleStick(exchange, DB_CONFIG)
+            [validated, latest_candels] = permitCandleStick(data_f, DB_CONFIG)
 
         if validated and ml_config.get("enable_ml_trade"):
             validated = validateMLTrade(latest_candels, validated)
@@ -375,12 +383,12 @@ def start():
         # If fixed buy price set, buy and return
         if DB_BUY_PRICE is not None and current_price < DB_BUY_PRICE:
             print(datetime.now(),"LOG: DB BUY Price Set, Buying at fixed price", DB_BUY_PRICE, current_price)
-            createFreshOrder(exchange, current_price, latest_candels)
+            createFreshOrder(exchange, current_price, latest_candels, data_f)
             return
 
         if validated:
             print(datetime.now(), "LOG: ALL Candle Validation Passed!!")
-            createFreshOrder(exchange, current_price, latest_candels)
+            createFreshOrder(exchange, current_price, latest_candels, data_f)
         else:
             print(datetime.now(), "LOG: One of the Validation Failed!!")
 

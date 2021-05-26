@@ -27,6 +27,7 @@ class Order(Base):
   buy_cummulative_quote_qty = Column('buy_cummulative_quote_qty', Numeric)
   sold_cummulative_quote_qty = Column('sold_cummulative_quote_qty', Numeric)
   total = Column('total', Numeric)
+  trend = Column('trend', Numeric)
   profit_sale_txn_id = Column('profit_sale_txn_id', String(50), default="")
   profit_sale_stop_loss_price = Column('profit_sale_stop_loss_price', Numeric)
   market_sell_txn_id = Column('market_sell_txn_id', String(50), default="")

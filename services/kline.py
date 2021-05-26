@@ -461,8 +461,9 @@ def runRulesValidations3(latest_signals, db_config, df):
     minute = now.minute
     patterns = {}
     is_stable_time = (minute%15) > pattern_detect_time
-    is_bullish_trend = getTrend(df, 5) > 0
-    is_bearish_trend = getTrend(df, 5) < 0
+    trend = getTrend(df, 4)
+    is_bullish_trend = trend > 0
+    is_bearish_trend = trend < 0
     patterns["pattern_1"] = (
         (
             is_stable_time and
@@ -491,16 +492,15 @@ def runRulesValidations3(latest_signals, db_config, df):
 
     valid_candle = patterns["pattern_1"] or patterns["pattern_2"] or patterns["pattern_3"] or patterns["pattern_4"] or patterns["pattern_5"]
     if valid_candle == False:
-        print(datetime.now(), "KLINE_LOG: Candle validation Failed: pattern, stable_time, is_bullish", patterns, is_stable_time, is_bullish_trend )
+        print(datetime.now(), "KLINE_LOG: Candle validation Failed: pattern, stable_time, is_bullish, trend", patterns, is_stable_time, is_bullish_trend, trend )
         return False
     else:
-        print(datetime.now(), "KLINE_LOG: Candle validation Passed: pattern, stable_time, is_bullish", patterns, is_stable_time, is_bullish_trend )
+        print(datetime.now(), "KLINE_LOG: Candle validation Passed: pattern, stable_time, is_bullish, trend", patterns, is_stable_time, is_bullish_trend, trend )
         return True
 
 
-def permitCandleStick(exchange, db_config):
+def permitCandleStick(df, db_config):
     """docstring"""
-    df = getCandleAndClassify(exchange)
 
     latest_signals = df.nlargest(5,"Open_time")
     current = latest_signals.iloc[0]
