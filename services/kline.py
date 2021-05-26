@@ -462,7 +462,7 @@ def runRulesValidations3(latest_signals, db_config, df):
     patterns = {}
     is_stable_time = (minute%15) > pattern_detect_time
     trend = getTrend(df, 4)
-    is_bullish_trend = trend > 0
+    is_bullish_trend = trend > 3.14
     is_bearish_trend = trend < 0
     patterns["pattern_1"] = (
         (
