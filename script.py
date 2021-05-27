@@ -210,7 +210,7 @@ def createFreshOrder(exchange, current_price, latest_candels, data_f):
     """docstring"""
     ammount = BUY_SIZE / current_price
     ammount = roundAssetAmount(ammount, exchange)
-    trend = getTrend(data_f, 4)
+    trend = getTrend(data_f, 5)
 
     if MOCK_TRADE:
         new_order = getMarketBuyMock(exchange, current_price, ammount, ammount, BUY_SIZE)
